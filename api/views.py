@@ -49,17 +49,30 @@ def loginUser(request):
     data = request.data
     email = data.get('email')
     password = data.get('password')
-    refreshToken = data.get('refreshToken')
+    id_token = data.get('idToken')
+    provider_id = data.get('providerId')
+    API_KEY = os.getenv("FIREBASE_API_KEY")
+
+    if not API_KEY:
+        return Response({'error': 'Firebase API key not configured on server'}, status=500)
+
+    if id_token and provider_id:
+        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={API_KEY}'
+        payload = {
+            'postBody': f'id_token={id_token}&providerId={provider_id}',
+            'requestUri': 'http://localhost',
+            'returnIdpCredential': True,
+            'returnSecureToken': True
+        }
+
+        response = requests.post(url, json=payload)
+        return Response(response.json())
 
     # basic validation before calling Firebase
     if not email or not password:
         return Response({'error': 'email and password are required'}, status=400)
     if len(password) < 6:
         return Response({'error': 'password must be at least 6 characters'}, status=400)
-    
-    API_KEY = os.getenv("FIREBASE_API_KEY")
-    if not API_KEY:
-        return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
     url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}'
     payload = {
@@ -69,7 +82,6 @@ def loginUser(request):
     }
 
     response = requests.post(url, json=payload)
-    response.raise_for_status()
     return Response(response.json())
 
 @api_view(['POST'])
@@ -93,7 +105,6 @@ def refreshToken(request):
 
     try:
         response = requests.post(url, data=payload)
-        response.raise_for_status()
     except requests.exceptions.HTTPError:
         # return the Firebase error JSON (if any) so client sees the real reason
         try:
