@@ -15,3 +15,12 @@ Content-Type: application/json
     "email": "test@example.com",
     "password": "Secret123!"
 }
+
+### Login with idToken
+POST http://127.0.0.1:8000/login/
+Content-Type: application/json
+
+{
+    "idToken": "",
+    "providerId": "google.com"
+}
