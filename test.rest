@@ -16,6 +16,14 @@ Content-Type: application/json
     "password": "Secret123!"
 }
 
+### Refresh Token - obtain new token using refresh token
+POST http://127.0.0.1:8000/refresh-token/
+Content-Type: application/json
+
+{
+    "refreshToken": "PASTE_YOUR_REFRESH_TOKEN_HERE"
+}
+
 ### Login with idToken
 POST http://127.0.0.1:8000/login/
 Content-Type: application/json
@@ -24,3 +32,4 @@ Content-Type: application/json
     "idToken": "",
     "providerId": "google.com"
 }
+
