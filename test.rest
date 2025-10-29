@@ -21,5 +21,5 @@ POST http://127.0.0.1:8000/refresh-token/
 Content-Type: application/json
 
 {
-    "refresh_token": "PASTE_YOUR_REFRESH_TOKEN_HERE"
+    "refreshToken": "PASTE_YOUR_REFRESH_TOKEN_HERE"
 }
