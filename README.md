@@ -21,7 +21,7 @@ For more information about virtual Python environments visit the [Python Documen
 
 ```sh
 python -m venv .venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 ### 3. Install dependencies
