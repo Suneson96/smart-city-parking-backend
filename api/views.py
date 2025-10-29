@@ -51,7 +51,10 @@ def loginUser(request):
     password = data.get('password')
     id_token = data.get('idToken')
     provider_id = data.get('providerId')
-    API_KEY = os.getenv("FIREBASE_API_KEY")
+
+    API_KEY = settings.FIREBASE_API_KEY
+    if not API_KEY:
+        return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
     if not API_KEY:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
@@ -73,10 +76,6 @@ def loginUser(request):
         return Response({'error': 'email and password are required'}, status=400)
     if len(password) < 6:
         return Response({'error': 'password must be at least 6 characters'}, status=400)
-    
-    API_KEY = settings.FIREBASE_API_KEY
-    if not API_KEY:
-        return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
     url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}'
     payload = {
