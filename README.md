@@ -20,7 +20,7 @@ cd smart-city-parking-backend
 For more information about virtual Python environments visit the [Python Documentation](https://docs.python.org/3/library/venv.html)
 
 ```sh
-python -m venv venv
+python -m venv .venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
