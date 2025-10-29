@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import requests
-import os
+from django.conf import settings
 
 @api_view(['GET'])
 def getExample(request):
@@ -19,7 +19,7 @@ def signupUser(request):
     if len(password) < 6:
         return Response({'error': 'password must be at least 6 characters'}, status=400)
 
-    API_KEY = os.getenv("FIREBASE_API_KEY")
+    API_KEY = settings.FIREBASE_API_KEY
     if not API_KEY:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
@@ -57,7 +57,7 @@ def loginUser(request):
     if len(password) < 6:
         return Response({'error': 'password must be at least 6 characters'}, status=400)
     
-    API_KEY = os.getenv("FIREBASE_API_KEY")
+    API_KEY = settings.FIREBASE_API_KEY
     if not API_KEY:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
@@ -81,7 +81,7 @@ def refreshToken(request):
     if not refreshToken:
         return Response({'error': 'refreshToken is required'}, status=400)
     
-    API_KEY = os.getenv("FIREBASE_API_KEY")
+    API_KEY = settings.FIREBASE_API_KEY
     if not API_KEY:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
