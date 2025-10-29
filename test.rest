@@ -15,3 +15,11 @@ Content-Type: application/json
     "email": "test@example.com",
     "password": "Secret123!"
 }
+
+### Refresh Token - obtain new token using refresh token
+POST http://127.0.0.1:8000/refresh-token/
+Content-Type: application/json
+
+{
+    "refresh_token": "PASTE_YOUR_REFRESH_TOKEN_HERE"
+}
