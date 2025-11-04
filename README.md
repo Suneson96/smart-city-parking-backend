@@ -49,5 +49,12 @@ The API will be available at `http://127.0.0.1:8000/`
 
 ## API Endpoints
 
-- `GET /` - Test endpoint that returns a welcome message
+Simple auth endpoints (proxy to Firebase). All endpoints expect and return JSON. Set the environment variable `FIREBASE_API_KEY` before running the server.
 
+- `GET /` — Test endpoint. Returns { "message": "API is working!" }.
+- `POST /signup/` — Create a user. Body: { "email": "...", "password": "..." }.
+- `POST /login/` — Sign in. Body: { "email": "...", "password": "..." }.
+- `POST /refresh-token/` — Refresh tokens. Body: { "refreshToken": "..." }.
+
+### Manual testing of endpoints
+Install the [Rest Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension and use the test.rest file to test the endpoints.
