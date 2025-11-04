@@ -24,12 +24,11 @@ Content-Type: application/json
     "refreshToken": "PASTE_YOUR_REFRESH_TOKEN_HERE"
 }
 
-### Login with provider (Google) - obtain token
+### Login with provider (Google) - obtain new token using ID token
 POST http://127.0.0.1:8000/login/
 Content-Type: application/json
 
 {
     "idToken": "PASTE_YOUR_ID_TOKEN_HERE",
-    "providerId": "google.com"
 }
 
