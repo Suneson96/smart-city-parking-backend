@@ -49,7 +49,6 @@ def loginUser(request):
     data = request.data
     email = data.get('email')
     password = data.get('password')
-    refreshToken = data.get('refreshToken')
 
     # basic validation before calling Firebase
     if not email or not password:
