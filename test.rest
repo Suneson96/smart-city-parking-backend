@@ -24,7 +24,7 @@ Content-Type: application/json
     "refreshToken": "PASTE_YOUR_REFRESH_TOKEN_HERE"
 }
 
-### Login with provider (Google) - obtain new token using ID token
+### Login with provider (Google) - obtain new token using oAuth ID token
 POST http://127.0.0.1:8000/login/
 Content-Type: application/json
 
