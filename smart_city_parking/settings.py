@@ -37,8 +37,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DJANGO_DEBUG')
 
-ALLOWED_HOSTS = ['zoie-transrational-beamishly.ngrok-free.dev',
-                 "127.0.0.1",
+ALLOWED_HOSTS = ["127.0.0.1",
                  'localhost']
 
 
