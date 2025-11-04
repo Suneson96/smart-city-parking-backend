@@ -67,8 +67,17 @@ def loginUser(request):
         'returnSecureToken': True
     }
 
-    response = requests.post(url, json=payload)
-    response.raise_for_status()
+    try:
+        response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        # return the Firebase error JSON (if any) so client sees the real reason
+        try:
+            return Response(response.json(), status=response.status_code)
+        except ValueError:
+            return Response({'error': response.text}, status=response.status_code)
+    except requests.exceptions.RequestException as exc:
+        return Response({'error': str(exc)}, status=500)
     return Response(response.json())
 
 @api_view(['POST'])
@@ -91,7 +100,7 @@ def refreshToken(request):
     }
 
     try:
-        response = requests.post(url, data=payload)
+        response = requests.post(url, data=payload, timeout=10)
         response.raise_for_status()
     except requests.exceptions.HTTPError:
         # return the Firebase error JSON (if any) so client sees the real reason
