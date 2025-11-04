@@ -49,8 +49,8 @@ def loginUser(request):
     data = request.data
     email = data.get('email')
     password = data.get('password')
-    id_token = data.get('idToken')
-    provider_id = data.get('providerId')
+    idToken = data.get('token')
+    provider_id = "google.com"
 
     API_KEY = settings.FIREBASE_API_KEY
     if not API_KEY:
@@ -59,10 +59,10 @@ def loginUser(request):
     if not API_KEY:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
-    if id_token and provider_id:
+    if idToken:
         url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={API_KEY}'
         payload = {
-            'postBody': f'id_token={id_token}&providerId={provider_id}',
+            'postBody': f'id_token={idToken}&providerId={provider_id}',
             'requestUri': 'http://localhost',
             'returnIdpCredential': True,
             'returnSecureToken': True
