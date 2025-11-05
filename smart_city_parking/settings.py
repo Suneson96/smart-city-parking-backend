@@ -18,6 +18,8 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, True),
     DJANGO_SECRET_KEY=(str, 'your-default-secret-key'),
     FIREBASE_API_KEY=(str, None),
+    HOST_URL=(str, 'http://localhost'),
+    HOST_PORT=(int, 8000),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,6 +31,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # Firebase settings
 FIREBASE_API_KEY = env('FIREBASE_API_KEY')
 
+# Host settings
+HOST_URL = env('HOST_URL')
+HOST_PORT = env('HOST_PORT')
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -38,7 +44,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 DEBUG = env('DJANGO_DEBUG')
 
 ALLOWED_HOSTS = ['127.0.0.1',
-                 'localhost']
+                 '${HOST_URL.replace("http://", "").replace("https://", "")}']
 
 
 # Application definition
