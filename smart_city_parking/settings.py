@@ -19,7 +19,8 @@ env = environ.Env(
     DJANGO_SECRET_KEY=(str, 'your-default-secret-key'),
     FIREBASE_API_KEY=(str, None),
     HOST_URL=(str, 'http://localhost'),
-    HOST_PORT=(int, 8000),
+    ALLOWED_HOSTS=(list, ['localhost','127.0.0.1']),
+    CORS_ALLOWED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000']),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,7 +34,6 @@ FIREBASE_API_KEY = env('FIREBASE_API_KEY')
 
 # Host settings
 HOST_URL = env('HOST_URL')
-HOST_PORT = env('HOST_PORT')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -43,8 +43,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DJANGO_DEBUG')
 
-ALLOWED_HOSTS = ['127.0.0.1',
-                 '${HOST_URL.replace("http://", "").replace("https://", "")}']
+ALLOWED_HOSTS = env('ALLOWED_HOSTS')
 
 
 # Application definition
@@ -143,6 +142,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS')
 
 CORS_ALLOW_CREDENTIALS = True
