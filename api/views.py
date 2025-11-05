@@ -67,7 +67,7 @@ def loginUser(request):
         }
 
         try:
-            response = requests.post(url, json=payload)
+            response = requests.post(url, json=payload, timeout=10)
             response.raise_for_status()
         except requests.exceptions.HTTPError:
             # return the Firebase error JSON (if any) so client sees the real reason
