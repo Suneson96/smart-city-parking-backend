@@ -18,6 +18,9 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, True),
     DJANGO_SECRET_KEY=(str, 'your-default-secret-key'),
     FIREBASE_API_KEY=(str, None),
+    HOST_URL=(str, 'http://localhost'),
+    ALLOWED_HOSTS=(list, ['localhost','127.0.0.1']),
+    CORS_ALLOWED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000']),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,6 +32,9 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # Firebase settings
 FIREBASE_API_KEY = env('FIREBASE_API_KEY')
 
+# Host settings
+HOST_URL = env('HOST_URL')
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -37,12 +43,13 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DJANGO_DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env('ALLOWED_HOSTS')
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -53,6 +60,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -133,3 +141,10 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS')
+
+CORS_ALLOW_CREDENTIALS = True

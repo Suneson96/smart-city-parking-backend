@@ -35,12 +35,14 @@ pip install -r requirements.txt
 
 ## Running the Server
 
-### 1. Apply database migrations
+### 1. Copy the conent of the .env.example file in to a .env file and update the settings according to your usecase.
+
+### 2. Apply database migrations
 ```sh
 python manage.py migrate
 ```
 
-### 2. Start the development server
+### 3. Start the development server
 ```sh
 python manage.py runserver
 ```
@@ -53,7 +55,7 @@ Simple auth endpoints (proxy to Firebase). All endpoints expect and return JSON.
 
 - `GET /` — Test endpoint. Returns { "message": "API is working!" }.
 - `POST /signup/` — Create a user. Body: { "email": "...", "password": "..." }.
-- `POST /login/` — Sign in. Body: { "email": "...", "password": "..." }.
+- `POST /login/` — Sign in. Body: { "token": "...", "providerId": "...", "email": "...", "password": "..." }.
 - `POST /refresh-token/` — Refresh tokens. Body: { "refreshToken": "..." }.
 
 ### Manual testing of endpoints

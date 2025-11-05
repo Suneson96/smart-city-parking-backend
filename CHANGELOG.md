@@ -2,6 +2,9 @@
 
 ### New features
 
+#### SCP-18 Add sign in with google to backend
+  * Added logic to login with google OAuth token.
+
 #### SCP-16 Add Firebase authentication
   * Added basic Firebase authentication
     * Added endpoints

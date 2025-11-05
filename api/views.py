@@ -49,36 +49,65 @@ def loginUser(request):
     data = request.data
     email = data.get('email')
     password = data.get('password')
+    idToken = data.get('token')
+    providerId = data.get("providerId", "google.com")
 
-    # basic validation before calling Firebase
-    if not email or not password:
-        return Response({'error': 'email and password are required'}, status=400)
-    if len(password) < 6:
-        return Response({'error': 'password must be at least 6 characters'}, status=400)
-    
     API_KEY = settings.FIREBASE_API_KEY
     if not API_KEY:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
-    url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}'
-    payload = {
-        'email': email,
-        'password': password,
-        'returnSecureToken': True
-    }
+    # Login with provider (Google) using ID token
+    if idToken and providerId:
+        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={API_KEY}'
+        payload = {
+            'postBody': f'id_token={idToken}&providerId={providerId}',
+            'requestUri': settings.HOST_URL,
+            'returnIdpCredential': True,
+            'returnSecureToken': True
+        }
 
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        # return the Firebase error JSON (if any) so client sees the real reason
         try:
-            return Response(response.json(), status=response.status_code)
-        except ValueError:
-            return Response({'error': response.text}, status=response.status_code)
-    except requests.exceptions.RequestException as exc:
-        return Response({'error': str(exc)}, status=500)
-    return Response(response.json())
+            response = requests.post(url, json=payload, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            # return the Firebase error JSON (if any) so client sees the real reason
+            try:
+                return Response(response.json(), status=response.status_code)
+            except ValueError:
+                return Response({'error': response.text}, status=response.status_code)
+        except requests.exceptions.RequestException as exc:
+            return Response({'error': str(exc)}, status=500)
+        return Response(response.json())
+
+    # Login with email and password
+    elif email and password:
+
+        # Validate password
+        if len(password) < 6:
+            return Response({'error': 'password must be at least 6 characters'}, status=400)
+
+        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}'
+        payload = {
+            'email': email,
+            'password': password,
+            'returnSecureToken': True
+        }
+
+        try:
+            response = requests.post(url, json=payload, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            # return the Firebase error JSON (if any) so client sees the real reason
+            try:
+                return Response(response.json(), status=response.status_code)
+            except ValueError:
+                return Response({'error': response.text}, status=response.status_code)
+        except requests.exceptions.RequestException as exc:
+            return Response({'error': str(exc)}, status=500)
+        return Response(response.json())
+
+    else:
+        return Response({'error': 'email and password are required'}, status=400)
 
 @api_view(['POST'])
 def refreshToken(request):
