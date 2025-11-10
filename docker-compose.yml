@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17
-    container_name: smart-parking-db
+    container_name: smart-city-parking-db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -17,7 +17,7 @@ services:
 
   web:
     build: .
-    container_name: smart-parking-backend
+    container_name: smart-city-parking-backend
     env_file:
       - .env
     ports:
