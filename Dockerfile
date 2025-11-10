@@ -2,7 +2,7 @@
 FROM ghcr.io/astral-sh/uv:latest AS uv
 
 # Use the official lightweight Python image based on Debian 12 (Bookworm)
-FROM python:3.13-slim-bookworm
+FROM python:3.13.9-slim-bookworm
  
 # Create the app directory
 RUN mkdir /app
@@ -18,7 +18,6 @@ ENV PYTHONUNBUFFERED=1
 
 # Install essential system packages (compiler, curl) and clean up cache
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
