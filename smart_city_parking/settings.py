@@ -98,7 +98,8 @@ WSGI_APPLICATION = 'smart_city_parking.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
+if env('POSTGRES_DB', default=None):
+    DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': env('POSTGRES_DB'),
@@ -108,6 +109,13 @@ DATABASES = {
             'PORT': env('DB_PORT'),
         }
 }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
