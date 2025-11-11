@@ -21,7 +21,7 @@ env = environ.Env(
     HOST_URL=(str, 'http://localhost'),
     ALLOWED_HOSTS=(list, ['localhost','127.0.0.1']),
     CORS_ALLOWED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000']),
-    POSTGRES_DB=(str, 'smart_city_parking_db'),
+    POSTGRES_DB=(str, None),
     POSTGRES_USER=(str, 'parking_user'), 
     POSTGRES_PASSWORD=(str, 'parking_password'), 
     DB_HOST=(str, 'db'), 
@@ -98,7 +98,7 @@ WSGI_APPLICATION = 'smart_city_parking.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if env('POSTGRES_DB', default=None):
+if env('POSTGRES_DB'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
