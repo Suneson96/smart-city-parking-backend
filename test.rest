@@ -1,0 +1,34 @@
+### Signup - create user
+POST http://127.0.0.1:8000/signup/
+Content-Type: application/json
+
+{
+    "email": "test@example.com",
+    "password": "Secret123!"
+}
+
+### Login - obtain token
+POST http://127.0.0.1:8000/login/
+Content-Type: application/json
+
+{
+    "email": "test@example.com",
+    "password": "Secret123!"
+}
+
+### Refresh Token - obtain new token using refresh token
+POST http://127.0.0.1:8000/refresh-token/
+Content-Type: application/json
+
+{
+    "refreshToken": "PASTE_YOUR_REFRESH_TOKEN_HERE"
+}
+
+### Login with provider (Google) - obtain new token using oAuth ID token
+POST http://127.0.0.1:8000/login/
+Content-Type: application/json
+
+{
+    "token": "PASTE_YOUR_ID_TOKEN_HERE"
+}
+

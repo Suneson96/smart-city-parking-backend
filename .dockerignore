@@ -1,0 +1,52 @@
+# --- General ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+*.swp
+
+# --- Python virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Build artifacts ---
+build/
+dist/
+*.egg-info/
+
+# --- Local configuration and secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Git and IDE files ---
+.git
+.gitignore
+.vscode/
+.idea/
+
+# --- OS-specific files ---
+.DS_Store
+Thumbs.db
+
+# --- Docker-related ---
+.dockerignore
+
+# --- Tests and coverage ---
+tests/
+.tox/
+.coverage
+pytest_cache/
+htmlcov/
+
+# --- Static/media (they can be generated in the container) ---
+staticfiles/
+media/
+
+# --- Temporary cache (uv or pip) ---
+.uv_cache/
+__pypackages__/
