@@ -7,7 +7,7 @@ You can also run it locally with SQLite for quick testing.
 
 ## Dependencies
 
-- Python 3.9+ [Windows Download](https://apps.microsoft.com/detail/9PNRBTZXMB4Z?hl=neutral&gl=DK&ocid=pdpshare)
+- Python 3.13+ [Windows Download](https://apps.microsoft.com/detail/9PNRBTZXMB4Z?hl=neutral&gl=DK&ocid=pdpshare)
 - Docker & Docker Compose (for PostgreSQL setup)
 - Other dependencies listed in `requirements.txt`
 
