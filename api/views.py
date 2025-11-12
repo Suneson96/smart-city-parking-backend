@@ -1,14 +1,26 @@
+"""
+API views.
+"""
+
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import requests
 from django.conf import settings
 
 @api_view(['GET'])
-def getExample(request):
+def get_example(_):
+    """
+    A simple API view to test if the API is working.
+    """
+
     return Response({"message": "API is working!"})
 
 @api_view(['POST'])
-def signupUser(request):
+def signup_user(request):
+    """
+    Sign up a new user using Firebase Authentication REST API.
+    """
+
     data = request.data
     email = data.get('email')
     password = data.get('password')
@@ -19,11 +31,11 @@ def signupUser(request):
     if len(password) < 6:
         return Response({'error': 'password must be at least 6 characters'}, status=400)
 
-    API_KEY = settings.FIREBASE_API_KEY
-    if not API_KEY:
+    apiKey = settings.FIREBASE_API_KEY
+    if not apiKey:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
-    url = f'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={API_KEY}'
+    url = f'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={apiKey}'
     payload = {
         'email': email,
         'password': password,
@@ -45,7 +57,11 @@ def signupUser(request):
     return Response(response.json())
 
 @api_view(['POST'])
-def loginUser(request):
+def login_user(request):
+    """
+    Log in a user using Firebase Authentication REST API.
+    """
+
     data = request.data
     email = data.get('email')
     password = data.get('password')
@@ -80,7 +96,7 @@ def loginUser(request):
         return Response(response.json())
 
     # Login with email and password
-    elif email and password:
+    if email and password:
 
         # Validate password
         if len(password) < 6:
@@ -110,7 +126,11 @@ def loginUser(request):
         return Response({'error': 'email and password are required'}, status=400)
 
 @api_view(['POST'])
-def refreshToken(request):
+def refresh_token(request):
+    """
+    Refresh Firebase ID token using Firebase Authentication REST API.
+    """
+
     data = request.data
     refreshToken = data.get('refreshToken')
 
