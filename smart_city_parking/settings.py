@@ -10,8 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import environ, os
+import os
 from pathlib import Path
+import environ
 
 # Set casting and default values for environment variables
 env = environ.Env(
@@ -22,10 +23,10 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ['localhost','127.0.0.1']),
     CORS_ALLOWED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000']),
     POSTGRES_DB=(str, None),
-    POSTGRES_USER=(str, 'parking_user'), 
-    POSTGRES_PASSWORD=(str, 'parking_password'), 
-    DB_HOST=(str, 'db'), 
-    DB_PORT=(int, 5432), 
+    POSTGRES_USER=(str, 'parking_user'),
+    POSTGRES_PASSWORD=(str, 'parking_password'),
+    DB_HOST=(str, 'db'),
+    DB_PORT=(int, 5432),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

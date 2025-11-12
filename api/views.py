@@ -1,14 +1,44 @@
+"""
+API views.
+"""
+
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import requests
 from django.conf import settings
 
+
+def _make_firebase_request(url, payload, timeout=10):
+    """
+    Helper function to make Firebase API requests with error handling.
+    Returns a tuple of (response_data, status_code).
+    """
+    try:
+        response = requests.post(url, json=payload, timeout=timeout)
+        response.raise_for_status()
+        return response.json(), 200
+    except requests.exceptions.HTTPError:
+        try:
+            return response.json(), response.status_code
+        except ValueError:
+            return {'error': response.text}, response.status_code
+    except requests.exceptions.RequestException as exc:
+        return {'error': str(exc)}, 500
+
+
 @api_view(['GET'])
-def getExample(request):
+def get_example(_):
+    """
+    A simple API view to test if the API is working.
+    """
+
     return Response({"message": "API is working!"})
 
 @api_view(['POST'])
-def signupUser(request):
+def signup_user(request):
+    """
+    Sign up a new user using Firebase Authentication REST API.
+    """
     data = request.data
     email = data.get('email')
     password = data.get('password')
@@ -19,125 +49,85 @@ def signupUser(request):
     if len(password) < 6:
         return Response({'error': 'password must be at least 6 characters'}, status=400)
 
-    API_KEY = settings.FIREBASE_API_KEY
-    if not API_KEY:
+    api_key = settings.FIREBASE_API_KEY
+    if not api_key:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
-    url = f'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={API_KEY}'
+    url = f'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}'
     payload = {
         'email': email,
         'password': password,
         'returnSecureToken': True
     }
 
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        # return the Firebase error JSON (if any) so client sees the real reason
-        try:
-            return Response(response.json(), status=response.status_code)
-        except ValueError:
-            return Response({'error': response.text}, status=response.status_code)
-    except requests.exceptions.RequestException as exc:
-        return Response({'error': str(exc)}, status=500)
-
-    return Response(response.json())
+    response_data, status_code = _make_firebase_request(url, payload)
+    return Response(response_data, status=status_code)
 
 @api_view(['POST'])
-def loginUser(request):
+def login_user(request):
+    """
+    Log in a user using Firebase Authentication REST API.
+    """
     data = request.data
     email = data.get('email')
     password = data.get('password')
-    idToken = data.get('token')
-    providerId = data.get("providerId", "google.com")
+    id_token = data.get('token')
+    provider_id = data.get("providerId", "google.com")
 
-    API_KEY = settings.FIREBASE_API_KEY
-    if not API_KEY:
+    api_key = settings.FIREBASE_API_KEY
+    if not api_key:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
     # Login with provider (Google) using ID token
-    if idToken and providerId:
-        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={API_KEY}'
+    if id_token and provider_id:
+        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={api_key}'
         payload = {
-            'postBody': f'id_token={idToken}&providerId={providerId}',
+            'postBody': f'id_token={id_token}&providerId={provider_id}',
             'requestUri': settings.HOST_URL,
             'returnIdpCredential': True,
             'returnSecureToken': True
         }
-
-        try:
-            response = requests.post(url, json=payload, timeout=10)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError:
-            # return the Firebase error JSON (if any) so client sees the real reason
-            try:
-                return Response(response.json(), status=response.status_code)
-            except ValueError:
-                return Response({'error': response.text}, status=response.status_code)
-        except requests.exceptions.RequestException as exc:
-            return Response({'error': str(exc)}, status=500)
-        return Response(response.json())
+        response_data, status_code = _make_firebase_request(url, payload)
+        return Response(response_data, status=status_code)
 
     # Login with email and password
-    elif email and password:
-
+    if email and password:
         # Validate password
         if len(password) < 6:
             return Response({'error': 'password must be at least 6 characters'}, status=400)
 
-        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}'
+        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}'
         payload = {
             'email': email,
             'password': password,
             'returnSecureToken': True
         }
+        response_data, status_code = _make_firebase_request(url, payload)
+        return Response(response_data, status=status_code)
 
-        try:
-            response = requests.post(url, json=payload, timeout=10)
-            response.raise_for_status()
-        except requests.exceptions.HTTPError:
-            # return the Firebase error JSON (if any) so client sees the real reason
-            try:
-                return Response(response.json(), status=response.status_code)
-            except ValueError:
-                return Response({'error': response.text}, status=response.status_code)
-        except requests.exceptions.RequestException as exc:
-            return Response({'error': str(exc)}, status=500)
-        return Response(response.json())
-
-    else:
-        return Response({'error': 'email and password are required'}, status=400)
+    return Response({'error': 'email and password are required'}, status=400)
 
 @api_view(['POST'])
-def refreshToken(request):
+def refresh_token(request):
+    """
+    Refresh Firebase ID token using Firebase Authentication REST API.
+    """
     data = request.data
-    refreshToken = data.get('refreshToken')
+    token = data.get('refreshToken')
 
     # basic validation before calling Firebase
-    if not refreshToken:
+    if not token:
         return Response({'error': 'refreshToken is required'}, status=400)
-    
-    API_KEY = settings.FIREBASE_API_KEY
-    if not API_KEY:
+
+    api_key = settings.FIREBASE_API_KEY
+    if not api_key:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
-    url = f'https://securetoken.googleapis.com/v1/token?key={API_KEY}'
+    url = f'https://securetoken.googleapis.com/v1/token?key={api_key}'
     payload = {
         'grant_type': 'refresh_token',
-        'refresh_token': refreshToken
+        'refresh_token': token
     }
 
-    try:
-        response = requests.post(url, data=payload, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.HTTPError:
-        # return the Firebase error JSON (if any) so client sees the real reason
-        try:
-            return Response(response.json(), status=response.status_code)
-        except ValueError:
-            return Response({'error': response.text}, status=response.status_code)
-    except requests.exceptions.RequestException as exc:
-        return Response({'error': str(exc)}, status=500)
-
-    return Response(response.json())
+    response_data, status_code = _make_firebase_request(url, payload, timeout=10)
+    return Response(response_data, status=status_code)
