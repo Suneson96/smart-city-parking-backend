@@ -1,3 +1,7 @@
+"""
+API endpoint configurations.
+"""
+
 from django.urls import path
 from . import views
 

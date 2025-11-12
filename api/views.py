@@ -31,11 +31,11 @@ def signup_user(request):
     if len(password) < 6:
         return Response({'error': 'password must be at least 6 characters'}, status=400)
 
-    apiKey = settings.FIREBASE_API_KEY
-    if not apiKey:
+    api_key = settings.FIREBASE_API_KEY
+    if not api_key:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
-    url = f'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={apiKey}'
+    url = f'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}'
     payload = {
         'email': email,
         'password': password,
@@ -68,13 +68,13 @@ def login_user(request):
     idToken = data.get('token')
     providerId = data.get("providerId", "google.com")
 
-    API_KEY = settings.FIREBASE_API_KEY
-    if not API_KEY:
+    api_key = settings.FIREBASE_API_KEY
+    if not api_key:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
     # Login with provider (Google) using ID token
     if idToken and providerId:
-        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={API_KEY}'
+        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key={api_key}'
         payload = {
             'postBody': f'id_token={idToken}&providerId={providerId}',
             'requestUri': settings.HOST_URL,
@@ -102,7 +102,7 @@ def login_user(request):
         if len(password) < 6:
             return Response({'error': 'password must be at least 6 characters'}, status=400)
 
-        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={API_KEY}'
+        url = f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}'
         payload = {
             'email': email,
             'password': password,
@@ -122,8 +122,7 @@ def login_user(request):
             return Response({'error': str(exc)}, status=500)
         return Response(response.json())
 
-    else:
-        return Response({'error': 'email and password are required'}, status=400)
+    return Response({'error': 'email and password are required'}, status=400)
 
 @api_view(['POST'])
 def refresh_token(request):
@@ -132,20 +131,20 @@ def refresh_token(request):
     """
 
     data = request.data
-    refreshToken = data.get('refreshToken')
+    refresh_token = data.get('refreshToken')
 
     # basic validation before calling Firebase
-    if not refreshToken:
+    if not refresh_token:
         return Response({'error': 'refreshToken is required'}, status=400)
-    
-    API_KEY = settings.FIREBASE_API_KEY
-    if not API_KEY:
+
+    api_key = settings.FIREBASE_API_KEY
+    if not api_key:
         return Response({'error': 'Firebase API key not configured on server'}, status=500)
 
-    url = f'https://securetoken.googleapis.com/v1/token?key={API_KEY}'
+    url = f'https://securetoken.googleapis.com/v1/token?key={api_key}'
     payload = {
         'grant_type': 'refresh_token',
-        'refresh_token': refreshToken
+        'refresh_token': refresh_token
     }
 
     try:
