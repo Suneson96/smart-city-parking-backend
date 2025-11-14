@@ -33,9 +33,12 @@ RUN uv pip install --system -r requirements.txt
  
 # Copy the Django project to the container
 COPY . /app/
- 
+
+# Make entrypoint.sh executable
+RUN chmod +x ./entrypoint.sh
+
 # Expose the Django port
 EXPOSE 8000
  
-# Run Django’s development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Set the entrypoint to run the entrypoint.sh script
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
