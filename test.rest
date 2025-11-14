@@ -32,3 +32,8 @@ Content-Type: application/json
     "token": "PASTE_YOUR_ID_TOKEN_HERE"
 }
 
+### Get all parking lots of current city operator
+GET http://127.0.0.1:8000/parking-lots/
+Authorization: Bearer PASTE_YOUR_ID_TOKEN_HERE
+Content-Type: application/json
+

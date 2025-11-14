@@ -144,6 +144,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Firebase credentials
+smart-city-parking-*.json
+
 # Spyder project settings
 .spyderproject
 .spyproject

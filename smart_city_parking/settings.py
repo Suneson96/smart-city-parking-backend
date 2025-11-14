@@ -19,6 +19,7 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, True),
     DJANGO_SECRET_KEY=(str, 'your-default-secret-key'),
     FIREBASE_API_KEY=(str, None),
+    GOOGLE_APPLICATION_CREDENTIALS=(str, None),
     HOST_URL=(str, 'http://localhost'),
     ALLOWED_HOSTS=(list, ['localhost','127.0.0.1']),
     CORS_ALLOWED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000']),
@@ -37,6 +38,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Firebase settings
 FIREBASE_API_KEY = env('FIREBASE_API_KEY')
+GOOGLE_APPLICATION_CREDENTIALS = env('GOOGLE_APPLICATION_CREDENTIALS')
 
 # Host settings
 HOST_URL = env('HOST_URL')

@@ -6,6 +6,50 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import requests
 from django.conf import settings
+from functools import wraps
+import firebase_admin
+from firebase_admin import auth as firebase_auth, credentials
+from . import models
+import os
+
+# Initialize Firebase Admin SDK
+if not firebase_admin._apps:
+    cred_path = settings.GOOGLE_APPLICATION_CREDENTIALS
+    if cred_path:
+        if not os.path.isabs(cred_path):
+            cred_path = os.path.join(settings.BASE_DIR, cred_path)
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+
+
+def firebase_authenticated(view_func):
+    """
+    Decorator to validate Firebase ID token and attach user UID to request.
+    Expects 'Authorization: Bearer <idToken>' header.
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return Response({'error': 'Authorization header with Bearer token required'}, status=401)
+        
+        id_token = auth_header.split('Bearer ')[1]
+        
+        try:
+            # Verify the ID token
+            decoded_token = firebase_auth.verify_id_token(id_token)
+            request.firebase_uid = decoded_token['uid']
+            return view_func(request, *args, **kwargs)
+        except firebase_auth.InvalidIdTokenError:
+            return Response({'error': 'Invalid ID token'}, status=401)
+        except firebase_auth.ExpiredIdTokenError:
+            return Response({'error': 'ID token has expired'}, status=401)
+        except Exception as e:
+            return Response({'error': f'Authentication failed: {str(e)}'}, status=401)
+    
+    return wrapper
 
 
 def _make_firebase_request(url, payload, timeout=10):
