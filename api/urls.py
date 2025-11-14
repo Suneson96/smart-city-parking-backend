@@ -10,5 +10,5 @@ urlpatterns = [
     path('signup/', views.signup_user),
     path('login/', views.login_user),
     path('refresh-token/', views.refresh_token),
-    path('parking-lots/', views.parking_lots),
+    path('operator-parking-lots/', views.operator_parking_lots),
 ]

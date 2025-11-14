@@ -175,3 +175,49 @@ def refresh_token(request):
 
     response_data, status_code = _make_firebase_request(url, payload, timeout=10)
     return Response(response_data, status=status_code)
+
+@api_view(['GET'])
+@firebase_authenticated
+def operator_parking_lots(request):
+    """
+    Get all parking lots managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    firebase_uid = request.firebase_uid
+    
+    try:
+        # Get the city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+        
+        # Get all parking lots managed by this operator
+        managed_relations = models.Manage.objects.filter(operator=operator).select_related('parking_lot')
+        
+        # Serialize the parking lots
+        parking_lots_data = []
+        for manage in managed_relations:
+            lot = manage.parking_lot
+            parking_lots_data.append({
+                'id': lot.id,
+                'auth_code': lot.auth_code,
+                'name': lot.name,
+                'latitude': lot.latitude,
+                'longitude': lot.longitude,
+                'address': lot.address
+            })
+        
+        return Response({
+            'operator_id': firebase_uid,
+            'parking_lots': parking_lots_data,
+            'count': len(parking_lots_data)
+        }, status=200)
+        
+    except models.CityOperator.DoesNotExist:
+        return Response({
+            'error': 'City operator not found for this Firebase UID',
+            'firebase_uid': firebase_uid
+        }, status=404)
+    except Exception as e:
+        return Response({
+            'error': f'Failed to retrieve parking lots: {str(e)}'
+        }, status=500)
+

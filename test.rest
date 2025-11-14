@@ -33,7 +33,7 @@ Content-Type: application/json
 }
 
 ### Get all parking lots of current city operator
-GET http://127.0.0.1:8000/parking-lots/
+GET http://127.0.0.1:8000/operator-parking-lots/
 Authorization: Bearer PASTE_YOUR_ID_TOKEN_HERE
 Content-Type: application/json
 
