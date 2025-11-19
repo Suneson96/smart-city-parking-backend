@@ -6,9 +6,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.get_example),
-    path('signup/', views.signup_user),
-    path('login/', views.login_user),
-    path('refresh-token/', views.refresh_token),
-    path('operator-parking-lots/', views.operator_parking_lots),
+    path("", views.get_example),
+    path("signup/", views.signup_user),
+    path("login/", views.login_user),
+    path("refresh-token/", views.refresh_token),
+    path("operator-parking-lots/", views.operator_parking_lots),
 ]
