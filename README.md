@@ -2,8 +2,7 @@
 
 A REST API for managing smart city parking built with Django REST Framework.
 
-This backend is containerized and runs by default with PostgreSQL using Docker.  
-You can also run it locally with SQLite for quick testing.
+This backend is containerized and runs with PostgreSQL/PostGIS using Docker.
 
 ## Dependencies
 
@@ -25,8 +24,6 @@ cd smart-city-parking-backend
 
 Before running the application, copy the content of `.env.example` into a new file named `.env` and update the values according to your setup.
 
-Example minimal `.env` for local use (SQLite):
-
 ```env
 FIREBASE_API_KEY=your_firebase_key
 DJANGO_SECRET_KEY=your_django_key
@@ -34,11 +31,6 @@ DJANGO_DEBUG=True
 HOST_URL=http://localhost:8000
 ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
-```
-
-If you run with Docker (PostgreSQL), your `.env` should also include:
-
-```env
 POSTGRES_DB=smart_city_parking_db
 POSTGRES_USER=parking_user
 POSTGRES_PASSWORD=parking_password
@@ -48,58 +40,29 @@ DB_PORT=5432
 
 ---
 
-## Running the Server locally (SQLite)
 
+## Running the Server with Docker 
 
-### 1. Create and activate a virtual environment
-
-For more information about virtual Python environments visit the [Python Documentation](https://docs.python.org/3/library/venv.html)
-
-```sh
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-### 2. Install dependencies
-
-We keep a list of all the Python libraries used in the project in `requirements.txt`.
-    To install all libraries at once run:
-
-```sh
-pip install -r requirements.txt
-```
-
-### 3. Apply database migrations
-```sh
-python manage.py migrate
-```
-
-### 4. Start the development server
-```sh
-python manage.py runserver
-```
-
-The API will be available at `http://localhost:8000/`
-
----
-
-## Running the Server with Docker (PostgreSQL)
-
-This setup runs Django and PostgreSQL in containers for development and testing.
+This setup runs Django and PostgreSQL/PostGIS in containers for development and testing.
 
 ### 1. Build and start the containers
 
-```sh
-docker compose up --build
-```
-
-### 2. Apply database migrations inside the container
-
-Once containers are running, open a new terminal and run:
+This command builds the images (including necessary GIS libraries), starts the database (with PostGIS), and runs the Django backend. **Database migrations are automatically applied** via the `entrypoint.sh` script once the database is healthy.
 
 ```sh
-docker compose exec web python manage.py migrate
+docker compose up --build -d
 ```
+
+*(Use `-d` to run containers in the background.)*
+
+### 2. Create Superuser (Optional)
+
+You need an admin account to access the Django admin dashboard (`http://localhost:8000/admin/`).
+
+```sh
+docker compose exec web python manage.py createsuperuser
+```
+
 
 ### 3. Stop the containers
 
@@ -122,3 +85,4 @@ Simple auth endpoints (proxy to Firebase). All endpoints expect and return JSON.
 
 ### Manual testing of endpoints
 Install the [Rest Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension and use the test.rest file to test the endpoints.
+
