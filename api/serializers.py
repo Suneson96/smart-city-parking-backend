@@ -1,6 +1,8 @@
 """Serializers for the smart city parking API."""
+
 # pylint: disable=too-few-public-methods
 from rest_framework import serializers
+from rest_framework_gis import serializers as gis_serializers
 from .models import Driver, CityOperator, ParkingLot, Manage, EventList, ParkingSpot
 
 
@@ -9,6 +11,7 @@ class DriverSerializer(serializers.ModelSerializer):
 
     class Meta:
         """Meta class for DriverSerializer."""
+
         model = Driver
         fields = ("id",)
 
@@ -18,17 +21,21 @@ class CityOperatorSerializer(serializers.ModelSerializer):
 
     class Meta:
         """Meta class for CityOperatorSerializer."""
+
         model = CityOperator
         fields = ("id",)
 
 
-class ParkingLotSerializer(serializers.ModelSerializer):
+class ParkingLotSerializer(gis_serializers.GeoFeatureModelSerializer):
     """Serializer for ParkingLot model."""
 
     class Meta:
         """Meta class for ParkingLotSerializer."""
+
         model = ParkingLot
-        fields = ("auth_code", "name", "latitude", "longitude", "address")
+        fields = ("auth_code", "name", "address")
+        geo_field = "location"
+        auto_bbox = True
 
 
 class ManageSerializer(serializers.ModelSerializer):
@@ -39,6 +46,7 @@ class ManageSerializer(serializers.ModelSerializer):
 
     class Meta:
         """Meta class for ManageSerializer."""
+
         model = Manage
         fields = ("id", "operator", "operator_id", "parking_lot", "parking_lot_name")
 
@@ -50,6 +58,7 @@ class EventListSerializer(serializers.ModelSerializer):
 
     class Meta:
         """Meta class for EventListSerializer."""
+
         model = EventList
         fields = ("id", "parking_lot", "parking_lot_name")
 
@@ -62,6 +71,7 @@ class ParkingSpotSerializer(serializers.ModelSerializer):
 
     class Meta:
         """Meta class for ParkingSpotSerializer."""
+
         model = ParkingSpot
         fields = (
             "id",
