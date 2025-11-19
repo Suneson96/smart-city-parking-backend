@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 import requests
 from django.conf import settings
 import firebase_admin
-from firebase_admin import auth as firebase_auth, credentials
+from firebase_admin import auth as firebase_auth, credentials, firestore
 from . import models
 
 # Initialize Firebase Admin SDK
@@ -259,6 +259,29 @@ def cadmin_add_parking_lot(request):
         # Create management relation
         models.Manage.objects.create(operator=operator, parking_lot=lot)
 
+        # Create eventlist document on firebase firestore
+        try:
+            from datetime import datetime
+            db = firestore.client()
+            eventlist_ref = db.collection('eventlists').document(str(lot.id))
+            eventlist_template = {
+                'parking_lot_id': lot.id,
+                'parking_lot_name': lot.name,
+                'events': [
+                    {
+                        "occupied_spots": [],
+                        "timestamp": datetime.utcnow()
+                    }
+                ],
+                'created_at': firestore.SERVER_TIMESTAMP,
+                'updated_at': firestore.SERVER_TIMESTAMP
+            }
+            eventlist_ref.set(eventlist_template)
+        except Exception as e:
+            # Log the error but don't fail the parking lot creation
+            print(f"Warning: Failed to create eventlist document: {str(e)}")
+
+
         return Response(
             {
                 "message": "Parking lot added successfully",
@@ -376,8 +399,19 @@ def cadmin_delete_parking_lot(request):
         )
 
         lot = manage_relation.parking_lot
+        lot_id_for_firestore = str(lot.id)
 
-        # Delete the parking lot
+        # Delete eventlist document from firebase firestore
+        try:
+            db = firestore.client()
+            eventlist_ref = db.collection('eventlists').document(lot_id_for_firestore)
+            eventlist_ref.delete()
+            print(f"Successfully deleted eventlist document for parking lot {lot_id_for_firestore}")
+        except Exception as e:
+            # Log the error but don't fail the parking lot deletion
+            print(f"Warning: Failed to delete eventlist document: {str(e)}")
+
+        # Delete the parking lot from database
         lot.delete()
 
         return Response(
