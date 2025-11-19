@@ -221,3 +221,25 @@ def operator_parking_lots(request):
             'error': f'Failed to retrieve parking lots: {str(e)}'
         }, status=500)
 
+@api_view(['GET'])
+def parking_lots(_):
+    """
+    Get all parking lots.
+    """
+
+    parking_lots = models.ParkingLot.objects.all()
+    parking_lots_data = []
+    for lot in parking_lots:
+        parking_lots_data.append({
+            'id': lot.id,
+            'auth_code': lot.auth_code,
+            'name': lot.name,
+            'latitude': lot.latitude,
+            'longitude': lot.longitude,
+            'address': lot.address
+        })
+
+    return Response({
+        'parking_lots': parking_lots_data,
+        'count': len(parking_lots_data)
+    }, status=200)
