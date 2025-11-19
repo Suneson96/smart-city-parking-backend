@@ -176,9 +176,7 @@ def refresh_token(request):
     response_data, status_code = _make_firebase_request(url, payload, timeout=10)
     return Response(response_data, status=status_code)
 
-@api_view(['GET'])
-@firebase_authenticated
-def operator_parking_lots(request):
+def cadmin_get_parking_lots(request):
     """
     Get all parking lots managed by the authenticated city operator.
     Requires Firebase authentication via Authorization header.
@@ -220,6 +218,177 @@ def operator_parking_lots(request):
         return Response({
             'error': f'Failed to retrieve parking lots: {str(e)}'
         }, status=500)
+
+def cadmin_add_parking_lot(request):
+    """
+    Add a new parking lot managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    firebase_uid = request.firebase_uid
+    data = request.data
+    
+    try:
+        # Get the city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+        
+        # Create new parking lot
+        lot = models.ParkingLot.objects.create(
+            auth_code=data.get('auth_code'),
+            name=data.get('name'),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
+            address=data.get('address')
+        )
+        
+        # Create management relation
+        models.Manage.objects.create(
+            operator=operator,
+            parking_lot=lot
+        )
+        
+        return Response({
+            'message': 'Parking lot added successfully',
+            'parking_lot': {
+                'id': lot.id,
+                'auth_code': lot.auth_code,
+                'name': lot.name,
+                'latitude': lot.latitude,
+                'longitude': lot.longitude,
+                'address': lot.address
+            }
+        }, status=201)
+        
+    except models.CityOperator.DoesNotExist:
+        return Response({
+            'error': 'City operator not found for this Firebase UID',
+            'firebase_uid': firebase_uid
+        }, status=404)
+    except Exception as e:
+        return Response({
+            'error': f'Failed to add parking lot: {str(e)}'
+        }, status=500)
+    
+def cadmin_update_parking_lot(request):
+    """
+    Update an existing parking lot managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    if not request.data.get('id'):
+        return Response({'error': 'Parking lot ID is required for update'}, status=400)
+    lot_id = request.data.get('id')
+    firebase_uid = request.firebase_uid
+    data = request.data
+    
+    try:
+        # Get the city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+        
+        # Verify that the operator manages the parking lot
+        manage_relation = models.Manage.objects.get(
+            operator=operator,
+            parking_lot__id=lot_id
+        )
+        
+        lot = manage_relation.parking_lot
+        
+        # Update parking lot details
+        lot.auth_code = data.get('auth_code', lot.auth_code)
+        lot.name = data.get('name', lot.name)
+        lot.latitude = data.get('latitude', lot.latitude)
+        lot.longitude = data.get('longitude', lot.longitude)
+        lot.address = data.get('address', lot.address)
+        lot.save()
+        
+        return Response({
+            'message': 'Parking lot updated successfully',
+            'parking_lot': {
+                'id': lot.id,
+                'auth_code': lot.auth_code,
+                'name': lot.name,
+                'latitude': lot.latitude,
+                'longitude': lot.longitude,
+                'address': lot.address
+            }
+        }, status=200)
+        
+    except models.CityOperator.DoesNotExist:
+        return Response({
+            'error': 'City operator not found for this Firebase UID',
+            'firebase_uid': firebase_uid
+        }, status=404)
+    except models.Manage.DoesNotExist:
+        return Response({
+            'error': 'This parking lot is not managed by the authenticated city operator',
+            'parking_lot_id': lot_id
+        }, status=403)
+    except Exception as e:
+        return Response({
+            'error': f'Failed to update parking lot: {str(e)}'
+        }, status=500)
+    
+def cadmin_delete_parking_lot(request):
+    """
+    Delete an existing parking lot managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    if not request.data.get('id'):
+        return Response({'error': 'Parking lot ID is required for deletion'}, status=400)
+    
+    firebase_uid = request.firebase_uid
+    lot_id = request.data.get('id')
+    
+    try:
+        # Get the city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+        
+        # Verify that the operator manages the parking lot
+        manage_relation = models.Manage.objects.get(
+            operator=operator,
+            parking_lot__id=lot_id
+        )
+        
+        lot = manage_relation.parking_lot
+        
+        # Delete the parking lot
+        lot.delete()
+        
+        return Response({
+            'message': 'Parking lot deleted successfully',
+            'parking_lot_id': lot_id
+        }, status=200)
+        
+    except models.CityOperator.DoesNotExist:
+        return Response({
+            'error': 'City operator not found for this Firebase UID',
+            'firebase_uid': firebase_uid
+        }, status=404)
+    except models.Manage.DoesNotExist:
+        return Response({
+            'error': 'This parking lot is not managed by the authenticated city operator',
+            'parking_lot_id': lot_id
+        }, status=403)
+    except Exception as e:
+        return Response({
+            'error': f'Failed to delete parking lot: {str(e)}'
+        }, status=500)
+
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
+@firebase_authenticated
+def cadmin_parking_lots(request):
+    """
+    Get all parking lots managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    if request.method == 'GET':
+        return cadmin_get_parking_lots(request)
+    elif request.method == 'POST':
+        return cadmin_add_parking_lot(request)
+    elif request.method == 'PUT':
+        return cadmin_update_parking_lot(request)
+    elif request.method == 'DELETE':
+        return cadmin_delete_parking_lot(request)
+    else:
+        return Response({'error': 'Method not allowed'}, status=405)
 
 @api_view(['GET'])
 def parking_lots(_):
