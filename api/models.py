@@ -1,5 +1,6 @@
 """Model definitions for the smart city parking application."""
 
+import uuid
 from django.db import models
 from django.core.validators import RegexValidator
 
@@ -38,7 +39,7 @@ class ParkingLot(models.Model):
     """Model representing a parking lot."""
 
     auth_code = models.CharField(
-        max_length=50, auto_created=True, unique=True, null=False, blank=False
+        max_length=50, default=uuid.uuid4, unique=True, null=False, blank=False, editable=False
     )
     name = models.CharField(max_length=100, unique=True, null=False, blank=False)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
@@ -76,7 +77,7 @@ class ParkingSpot(models.Model):
 
     parking_lot = models.ForeignKey(ParkingLot, on_delete=models.CASCADE)
     auth_code = models.CharField(
-        max_length=50, auto_created=True, unique=True, null=False, blank=False
+        max_length=50, default=uuid.uuid4, unique=True, null=False, blank=False, editable=False
     )
     event_list = models.ForeignKey(
         EventList, on_delete=models.CASCADE, null=True, blank=True

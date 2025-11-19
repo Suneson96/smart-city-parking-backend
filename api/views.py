@@ -483,3 +483,269 @@ def parking_lots(_):
     return Response(
         {"parking_lots": parking_lots_data, "count": len(parking_lots_data)}, status=200
     )
+
+def cadmin_get_parking_spots(request):
+    """
+    Get all parking spots managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    firebase_uid = request.firebase_uid
+    parking_lot_id = request.data.get("parking_lot_id")
+
+    try:
+        # Get the city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+
+        # Verify that the operator manages the parking lot
+        manage_relation = models.Manage.objects.get(
+            operator=operator, parking_lot__id=parking_lot_id
+        )
+
+        lot = manage_relation.parking_lot
+
+        # Get all parking spots in this parking lot
+        parking_spots = models.ParkingSpot.objects.filter(parking_lot=lot)
+
+        parking_spots_data = []
+        for spot in parking_spots:
+            parking_spots_data.append(
+                {
+                    "id": spot.id,
+                    "auth_code": spot.auth_code,
+                    "parking_lot_id": lot.id,
+                }
+            )
+
+        return Response(
+            {
+                "parking_lot_id": lot.id,
+                "parking_spots": parking_spots_data,
+                "count": len(parking_spots_data),
+            },
+            status=200,
+        )
+    except models.CityOperator.DoesNotExist:
+        return Response(
+            {
+                "error": "City operator not found for this Firebase UID",
+                "firebase_uid": firebase_uid,
+            },
+            status=404,
+        )
+    except models.Manage.DoesNotExist:
+        return Response(
+            {
+                "error": "This parking lot is not managed by the authenticated city operator",
+                "parking_lot_id": parking_lot_id,
+            },
+            status=403,
+        )
+    except (ValueError, TypeError, KeyError) as e:
+        return Response(
+            {"error": f"Failed to retrieve parking spots: {str(e)}"}, status=500
+        )
+
+
+def cadmin_add_parking_spot(request):
+    """
+    Add a new parking spot to a parking lot managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    firebase_uid = request.firebase_uid
+    data = request.data
+
+    try:
+        # Get the city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+
+        # Verify that the operator manages the parking lot
+        lot_id = data.get("parking_lot_id")
+        manage_relation = models.Manage.objects.get(
+            operator=operator, parking_lot__id=lot_id
+        )
+
+        lot = manage_relation.parking_lot
+
+        # Create new parking spot
+        spot = models.ParkingSpot.objects.create(
+            parking_lot=lot,
+        )
+
+        # Get all parking spots in this parking lot
+        parking_spots = models.ParkingSpot.objects.filter(parking_lot=lot)
+        parking_spots_data = []
+        for spot in parking_spots:
+            parking_spots_data.append(
+                {
+                    "id": spot.id,
+                    "auth_code": spot.auth_code,
+                    "parking_lot_id": lot.id,
+                }
+            )
+
+        return Response(
+            {
+                "message": "Parking spot added successfully",
+                "parking_spots": parking_spots_data,
+                "count": len(parking_spots_data),
+            },
+            status=201,
+        )
+
+    except models.CityOperator.DoesNotExist:
+        return Response(
+            {
+                "error": "City operator not found for this Firebase UID",
+                "firebase_uid": firebase_uid,
+            },
+            status=404,
+        )
+    except models.Manage.DoesNotExist:
+        return Response(
+            {
+                "error": "This parking lot is not managed by the authenticated city operator",
+                "parking_lot_id": lot_id,
+            },
+            status=403,
+        )
+    except (ValueError, TypeError, KeyError) as e:
+        return Response({"error": f"Failed to add parking spot: {str(e)}"}, status=500)
+
+def cadmin_delete_parking_spot(request):
+    """
+    Delete an existing parking spot managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    if not request.data.get("id"):
+        return Response(
+            {"error": "Parking spot ID is required for deletion"}, status=400
+        )
+
+    firebase_uid = request.firebase_uid
+    spot_id = request.data.get("id")
+
+    try:
+        # Get the city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+
+        # Verify that the operator manages the parking spot
+        spot = models.ParkingSpot.objects.get(id=spot_id)
+        manage_relation = models.Manage.objects.get(
+            operator=operator, parking_lot=spot.parking_lot
+        )
+
+        # Delete the parking spot from database
+        spot.delete()
+
+        return Response(
+            {"message": "Parking spot deleted successfully", "parking_spot_id": spot_id},
+            status=200,
+        )
+
+    except models.CityOperator.DoesNotExist:
+        return Response(
+            {
+                "error": "City operator not found for this Firebase UID",
+                "firebase_uid": firebase_uid,
+            },
+            status=404,
+        )
+    except models.Manage.DoesNotExist:
+        return Response(
+            {
+                "error": "This parking spot is not managed by the authenticated city operator",
+                "parking_spot_id": spot_id,
+            },
+            status=403,
+        )
+    except (ValueError, TypeError) as e:
+        return Response(
+            {"error": f"Failed to delete parking spot: {str(e)}"}, status=500
+        )
+
+@api_view(["GET", "POST", "DELETE"])
+@firebase_authenticated
+def cadmin_parking_spots(request):
+    """
+    Add a new parking spot to a parking lot managed by the authenticated city operator.
+    Requires Firebase authentication via Authorization header.
+    """
+    if request.method == "GET":
+        return cadmin_get_parking_spots(request)
+    if request.method == "POST":
+        return cadmin_add_parking_spot(request)
+    if request.method == "DELETE":
+        return cadmin_delete_parking_spot(request)
+    
+
+@api_view(["POST"])
+def post_parking_spot_event(request):
+    """
+    Post parking spot event to update occupied spots in Firestore.
+    """
+    data = request.data
+    auth_code = data.get("auth_code")
+    parking_spot_status = data.get("status")  # e.g., "occupied" or "vacant"
+    if not auth_code or not parking_spot_status:
+        return Response(
+            {"error": "auth_code and status are required"}, status=400
+        )
+    
+    try:
+        # Find the parking spot by auth_code
+        spot = models.ParkingSpot.objects.get(auth_code=auth_code)
+        lot = spot.parking_lot
+        lot_id_for_firestore = str(lot.id)
+
+        # Update Firestore eventlist document
+        db = firestore.client()
+        eventlist_ref = db.collection('eventlists').document(lot_id_for_firestore)
+        eventlist_doc = eventlist_ref.get()
+        if not eventlist_doc.exists:
+            return Response(
+                {"error": "Event list document not found for this parking lot"}, status=404
+            )
+
+        eventlist_data = eventlist_doc.to_dict()
+        events = eventlist_data.get('events', [])
+        
+        from datetime import datetime
+
+        # Add new event with updated occupied spots
+        occupied_spots = set()
+        if events:
+            last_event = events[-1]
+            occupied_spots = set(last_event.get('occupied_spots', []))
+        if parking_spot_status == "occupied":
+            occupied_spots.add(spot.id)
+        elif parking_spot_status == "vacant":
+            occupied_spots.discard(spot.id)
+        else:
+            return Response(
+                {"error": "Invalid status value. Must be 'occupied' or 'vacant'."}, status=400
+            )
+
+        new_event = {
+            "occupied_spots": list(occupied_spots),
+            "timestamp": datetime.utcnow()
+        }
+        events.append(new_event)
+
+        # Update the document in Firestore
+        eventlist_ref.update({
+            'events': events,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
+
+        return Response(
+            {"message": "Parking spot event posted successfully"}, status=200
+        )
+    
+    except models.ParkingSpot.DoesNotExist:
+        return Response(
+            {"error": "Parking spot not found for this auth_code"}, status=404
+        )
+    except Exception as e:
+        return Response(
+            {"error": f"Failed to post parking spot event: {str(e)}"}, status=500
+        )
