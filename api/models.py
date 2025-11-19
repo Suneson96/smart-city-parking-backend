@@ -2,7 +2,8 @@
 
 # pylint: disable=no-member
 
-from django.db import models
+from django.contrib.gis.db import models
+from django.contrib.gis.geos import Point
 from django.core.validators import RegexValidator
 
 FIREBASE_UID_VALIDATOR = RegexValidator(
@@ -43,9 +44,10 @@ class ParkingLot(models.Model):
         max_length=50, auto_created=True, unique=True, null=False, blank=False
     )
     name = models.CharField(max_length=100, unique=True, null=False, blank=False)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
     address = models.CharField(max_length=255, unique=True, null=False, blank=False)
+    location = models.PointField(
+        srid=4326, geography=True, default=Point(12.5683, 55.6761)
+    )
 
     def __str__(self):
         return str(self.name)
