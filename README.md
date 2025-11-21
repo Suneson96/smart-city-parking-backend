@@ -26,6 +26,7 @@ Before running the application, copy the content of `.env.example` into a new fi
 
 ```env
 FIREBASE_API_KEY=your_firebase_key
+GOOGLE_APPLICATION_CREDENTIALS=firebase-settings-file-name.json 
 DJANGO_SECRET_KEY=your_django_key
 DJANGO_DEBUG=True
 HOST_URL=http://localhost:8000
