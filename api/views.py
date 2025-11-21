@@ -208,8 +208,10 @@ def cadmin_get_parking_lots(request):
                     "id": lot.id,
                     "auth_code": lot.auth_code,
                     "name": lot.name,
-                    "latitude": lot.latitude,
-                    "longitude": lot.longitude,
+                    "location": {
+                        "latitude": lot.location.y,
+                        "longitude": lot.location.x,
+                    },
                     "address": lot.address,
                 }
             )
@@ -253,8 +255,9 @@ def cadmin_add_parking_lot(request):
         lot = models.ParkingLot.objects.create(
             auth_code=data.get("auth_code"),
             name=data.get("name"),
-            latitude=data.get("latitude"),
-            longitude=data.get("longitude"),
+            location=models.Point(
+                float(data.get("longitude")), float(data.get("latitude")), srid=4326
+            ),
             address=data.get("address"),
         )
 
@@ -268,8 +271,10 @@ def cadmin_add_parking_lot(request):
                     "id": lot.id,
                     "auth_code": lot.auth_code,
                     "name": lot.name,
-                    "latitude": lot.latitude,
-                    "longitude": lot.longitude,
+                    "location": {
+                        "latitude": lot.location.y,
+                        "longitude": lot.location.x,
+                    },
                     "address": lot.address,
                 },
             },
@@ -313,8 +318,11 @@ def cadmin_update_parking_lot(request):
         # Update parking lot details
         lot.auth_code = data.get("auth_code", lot.auth_code)
         lot.name = data.get("name", lot.name)
-        lot.latitude = data.get("latitude", lot.latitude)
-        lot.longitude = data.get("longitude", lot.longitude)
+        lot.location = models.Point(
+            float(data.get("longitude", lot.location.x)),
+            float(data.get("latitude", lot.location.y)),
+            srid=4326,
+        )
         lot.address = data.get("address", lot.address)
         lot.save()
 
@@ -325,8 +333,10 @@ def cadmin_update_parking_lot(request):
                     "id": lot.id,
                     "auth_code": lot.auth_code,
                     "name": lot.name,
-                    "latitude": lot.latitude,
-                    "longitude": lot.longitude,
+                    "location": {
+                        "latitude": lot.location.y,
+                        "longitude": lot.location.x,
+                    },
                     "address": lot.address,
                 },
             },
@@ -442,8 +452,10 @@ def parking_lots(_):
                 "id": lot.id,
                 "auth_code": lot.auth_code,
                 "name": lot.name,
-                "latitude": lot.latitude,
-                "longitude": lot.longitude,
+                "location": {
+                    "latitude": lot.location.y,
+                    "longitude": lot.location.x,
+                },
                 "address": lot.address,
             }
         )
