@@ -19,6 +19,9 @@
     * `PUT: http://localhost:8000/cadmin/parking-lots/`
     * `DELETE: http://localhost:8000/cadmin/parking-lots/`
 
+#### SCP-31 Integrate GeoBjangi fir geospatial support
+  * Change parking lot location to a geospatial point
+
 #### SCP-28 Add Django models
   * Added Django models for the database
   * Added serializers and admin registration for the models
