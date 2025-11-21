@@ -58,6 +58,7 @@ def firebase_authenticated(view_func):
 
     return wrapper
 
+
 def parking_spot_authenticated(view_func):
     """
     Decorator to validate parking spot auth_code and attach parking spot to request.
@@ -81,7 +82,7 @@ def parking_spot_authenticated(view_func):
             request.parking_spot = parking_spot
             return view_func(request, *args, **kwargs)
         except models.ParkingSpot.DoesNotExist:
-            return Response({f"error": "Invalid auth code"}, status=401)
+            return Response({"error": "Invalid auth code"}, status=401)
         except (ValueError, KeyError) as e:
             return Response({"error": f"Authentication failed: {str(e)}"}, status=401)
 
@@ -291,26 +292,20 @@ def cadmin_add_parking_lot(request):
 
         # Create eventlist document on firebase firestore
         try:
-            from datetime import datetime
+
             db = firestore.client()
-            eventlist_ref = db.collection('eventlists').document(str(lot.id))
+            eventlist_ref = db.collection("eventlists").document(str(lot.id))
             eventlist_template = {
-                'parking_lot_id': lot.id,
-                'parking_lot_name': lot.name,
-                'events': [
-                    {
-                        "occupied_spots": [],
-                        "timestamp": datetime.utcnow()
-                    }
-                ],
-                'created_at': firestore.SERVER_TIMESTAMP,
-                'updated_at': firestore.SERVER_TIMESTAMP
+                "parking_lot_id": lot.id,
+                "parking_lot_name": lot.name,
+                "events": [{"occupied_spots": [], "timestamp": datetime.utcnow()}],
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "updated_at": firestore.SERVER_TIMESTAMP,
             }
             eventlist_ref.set(eventlist_template)
-        except Exception as e:
+        except (ValueError, ConnectionError, RuntimeError) as e:
             # Log the error but don't fail the parking lot creation
             print(f"Warning: Failed to create eventlist document: {str(e)}")
-
 
         return Response(
             {
@@ -432,10 +427,12 @@ def cadmin_delete_parking_lot(request):
         # Delete eventlist document from firebase firestore
         try:
             db = firestore.client()
-            eventlist_ref = db.collection('eventlists').document(lot_id_for_firestore)
+            eventlist_ref = db.collection("eventlists").document(lot_id_for_firestore)
             eventlist_ref.delete()
-            print(f"Successfully deleted eventlist document for parking lot {lot_id_for_firestore}")
-        except Exception as e:
+            print(
+                f"Successfully deleted eventlist document for parking lot {lot_id_for_firestore}"
+            )
+        except (ValueError, ConnectionError, RuntimeError) as e:
             # Log the error but don't fail the parking lot deletion
             print(f"Warning: Failed to delete eventlist document: {str(e)}")
 
@@ -510,6 +507,7 @@ def parking_lots(_):
     return Response(
         {"parking_lots": parking_lots_data, "count": len(parking_lots_data)}, status=200
     )
+
 
 def cadmin_get_parking_spots(request):
     """
@@ -627,6 +625,7 @@ def cadmin_add_parking_spot(request):
     except (ValueError, TypeError, KeyError) as e:
         return Response({"error": f"Failed to add parking spot: {str(e)}"}, status=500)
 
+
 def cadmin_delete_parking_spot(request):
     """
     Delete an existing parking spot managed by the authenticated city operator.
@@ -649,12 +648,22 @@ def cadmin_delete_parking_spot(request):
         manage_relation = models.Manage.objects.get(
             operator=operator, parking_lot=spot.parking_lot
         )
+        if not manage_relation:
+            return Response(
+                {
+                    "error": "This parking spot is not managed by the authenticated city operator",
+                },
+                status=403,
+            )
 
         # Delete the parking spot from database
         spot.delete()
 
         return Response(
-            {"message": "Parking spot deleted successfully", "parking_spot_id": spot_id},
+            {
+                "message": "Parking spot deleted successfully",
+                "parking_spot_id": spot_id,
+            },
             status=200,
         )
 
@@ -679,6 +688,7 @@ def cadmin_delete_parking_spot(request):
             {"error": f"Failed to delete parking spot: {str(e)}"}, status=500
         )
 
+
 @api_view(["GET", "POST", "DELETE"])
 @firebase_authenticated
 def cadmin_parking_spots(request):
@@ -692,61 +702,68 @@ def cadmin_parking_spots(request):
         return cadmin_add_parking_spot(request)
     if request.method == "DELETE":
         return cadmin_delete_parking_spot(request)
-    
+    return Response({"error": "Method not allowed"}, status=405)
 
 @api_view(["POST"])
 @parking_spot_authenticated
 def post_parking_spot_event(request):
     """
     Post parking spot event to update occupied spots in Firestore.
+    Expects: {"occupied": true} or {"occupied": false}
     """
     parking_spot = request.parking_spot
     data = request.data
-    status = data.get("status")
+    occupied = data.get("occupied")
 
-    if status is None:
-        return Response({"error": "status field is required"}, status=400)
+    if occupied is None:
+        return Response({"error": "occupied field is required"}, status=400)
 
-    if status not in ["occupied", "vacant"]:
-        return Response({"error": "status must be 'occupied' or 'vacant'"}, status=400)
+    if not isinstance(occupied, bool):
+        return Response({"error": "occupied must be a boolean"}, status=400)
+
     try:
         db = firestore.client()
         parking_lot_id = str(parking_spot.parking_lot.id)
-        eventlist_ref = db.collection('eventlists').document(parking_lot_id)
+        eventlist_ref = db.collection("eventlists").document(parking_lot_id)
         eventlist_doc = eventlist_ref.get()
         if not eventlist_doc.exists:
             return Response({"error": "Event list document does not exist"}, status=404)
-        
+
         eventlist_data = eventlist_doc.to_dict()
-        events = eventlist_data.get('events', [])
-        if not events:
-            return Response({"error": "No events found in event list"}, status=500)
-        
+        events = eventlist_data.get("events", [])
         latest_event = events[-1]
-        occupied_spots = set(latest_event.get('occupied_spots', []))
+        occupied_spots = set(latest_event.get("occupied_spots", []))
+        spot_id = str(parking_spot.id)
+        is_currently_occupied = spot_id in occupied_spots
 
         # Check if the status is already the same as the current state
-        if status == "occupied" and str(parking_spot.id) in occupied_spots:
-            return Response({"message": "Parking spot already marked as occupied"}, status=200)
-        if status == "vacant" and str(parking_spot.id) not in occupied_spots:
-            return Response({"message": "Parking spot already marked as vacant"}, status=200)
+        if occupied == is_currently_occupied:
+            status_text = "occupied" if occupied else "vacant"
+            return Response(
+                {"message": f"Parking spot already marked as {status_text}"},
+                status=200,
+            )
 
-        if status == "occupied":
-            occupied_spots.add(str(parking_spot.id))
-        elif status == "vacant":
-            occupied_spots.discard(str(parking_spot.id))
+        # Update occupied spots based on new status
+        if occupied:
+            occupied_spots.add(spot_id)
+        else:
+            occupied_spots.discard(spot_id)
 
         new_event = {
             "occupied_spots": list(occupied_spots),
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.utcnow(),
         }
         events.append(new_event)
 
-        eventlist_ref.update({
-            'events': events,
-            'updated_at': firestore.SERVER_TIMESTAMP
-        })
+        eventlist_ref.update(
+            {"events": events, "updated_at": firestore.SERVER_TIMESTAMP}
+        )
 
-        return Response({"message": "Parking spot event recorded successfully"}, status=200)
-    except Exception as e:
-        return Response({"error": f"Failed to record parking spot event: {str(e)}"}, status=500)
+        return Response(
+            {"message": "Parking spot event recorded successfully"}, status=200
+        )
+    except (ValueError, ConnectionError, RuntimeError) as e:
+        return Response(
+            {"error": f"Failed to record parking spot event: {str(e)}"}, status=500
+        )

@@ -41,7 +41,12 @@ class ParkingLot(models.Model):
     """Model representing a parking lot."""
 
     auth_code = models.CharField(
-        max_length=50, default=uuid.uuid4, unique=True, null=False, blank=False, editable=False
+        max_length=50,
+        default=uuid.uuid4,
+        unique=True,
+        null=False,
+        blank=False,
+        editable=False,
     )
     name = models.CharField(max_length=100, unique=True, null=False, blank=False)
     address = models.CharField(max_length=255, unique=True, null=False, blank=False)
@@ -78,7 +83,12 @@ class ParkingSpot(models.Model):
 
     parking_lot = models.ForeignKey(ParkingLot, on_delete=models.CASCADE)
     auth_code = models.CharField(
-        max_length=50, default=uuid.uuid4, unique=True, null=False, blank=False, editable=False
+        max_length=50,
+        default=uuid.uuid4,
+        unique=True,
+        null=False,
+        blank=False,
+        editable=False,
     )
     event_list = models.ForeignKey(
         EventList, on_delete=models.CASCADE, null=True, blank=True
