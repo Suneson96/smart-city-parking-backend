@@ -319,7 +319,7 @@ def cadmin_update_parking_lot(request):
         # Update parking lot details
         lot.auth_code = data.get("auth_code", lot.auth_code)
         lot.name = data.get("name", lot.name)
-        lot.location = models.Point(
+        lot.location = Point(
             float(data.get("longitude", lot.location.x)),
             float(data.get("latitude", lot.location.y)),
             srid=4326,
