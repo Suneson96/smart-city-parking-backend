@@ -2,6 +2,8 @@
 API views.
 """
 
+# pylint: disable=no-member
+
 import os
 from functools import wraps
 from rest_framework.response import Response

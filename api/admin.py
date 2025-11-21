@@ -35,6 +35,7 @@ class ParkingLotAdminForm(forms.ModelForm):
 
         model = ParkingLot
         fields = ("auth_code", "name", "address", "latitude", "longitude")
+        exclude = ("location",)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

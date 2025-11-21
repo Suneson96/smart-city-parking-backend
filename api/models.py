@@ -1,5 +1,7 @@
 """Model definitions for the smart city parking application."""
 
+# pylint: disable=no-member
+
 from django.contrib.gis.db import models
 from django.core.validators import RegexValidator
 
