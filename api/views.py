@@ -256,7 +256,7 @@ def cadmin_add_parking_lot(request):
         lot = models.ParkingLot.objects.create(
             auth_code=data.get("auth_code"),
             name=data.get("name"),
-            location=models.Point(
+            location=Point(
                 float(data.get("longitude")), float(data.get("latitude")), srid=4326
             ),
             address=data.get("address"),
