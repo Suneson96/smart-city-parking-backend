@@ -79,10 +79,25 @@ The API will be available at `http://localhost:8000/`
 
 Simple auth endpoints (proxy to Firebase). All endpoints expect and return JSON. Set the environment variable `FIREBASE_API_KEY` before running the server.
 
+### Authentication
+
 - `GET /` — Test endpoint. Returns { "message": "API is working!" }.
 - `POST /signup/` — Create a user. Body: { "email": "...", "password": "..." }.
 - `POST /login/` — Sign in. Body: { "token": "...", "providerId": "...", "email": "...", "password": "..." }.
 - `POST /refresh-token/` — Refresh tokens. Body: { "refreshToken": "..." }.
+
+### Parking Lots
+
+- `GET /parking-lots/` — Get all parking lots. Returns a list of all parking lots with their details.
+
+### City Admin Parking Lots (Authenticated)
+
+All `cadmin/parking-lots/` endpoints require Firebase authentication via the `Authorization: Bearer <idToken>` header.
+
+- `GET /cadmin/parking-lots/` — Get all parking lots managed by the authenticated city operator.
+- `POST /cadmin/parking-lots/` — Add a new parking lot. Body: { "auth_code": "...", "name": "...", "latitude": ..., "longitude": ..., "address": "..." }.
+- `PUT /cadmin/parking-lots/` — Update an existing parking lot. Body: { "id": "...", "auth_code": "...", "name": "...", "latitude": ..., "longitude": ..., "address": "..." }.
+- `DELETE /cadmin/parking-lots/` — Delete a parking lot. Body: { "id": "..." }.
 
 ### Manual testing of endpoints
 Install the [Rest Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension and use the test.rest file to test the endpoints.
