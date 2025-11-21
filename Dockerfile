@@ -19,6 +19,7 @@ ENV PYTHONUNBUFFERED=1
 # Install essential system packages (compiler, curl) and clean up cache
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    binutils libproj-dev gdal-bin \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy uv and uvx from the uv image
