@@ -34,8 +34,8 @@ class ParkingLotAdminForm(forms.ModelForm):
         """Meta class for ParkingLotAdminForm."""
 
         model = ParkingLot
-        fields = ("auth_code", "name", "address", "location")
-        widgets = {"location": forms.HiddenInput()}
+        fields = ("auth_code", "name", "address", "latitude", "longitude")
+        exclude = ("location",)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,12 +49,8 @@ class ParkingLotAdminForm(forms.ModelForm):
         longitude = cleaned_data.get("longitude")
         if latitude is None or longitude is None:
             raise forms.ValidationError("Both latitude and longitude must be provided.")
-        cleaned_data["location"] = Point(float(longitude), float(latitude), srid=4326)
+        self.instance.location = Point(float(longitude), float(latitude), srid=4326)
         return cleaned_data
-
-    def save(self, commit=True):
-        self.instance.location = self.cleaned_data["location"]
-        return super().save(commit)
 
 
 @admin.register(ParkingLot)
