@@ -2,6 +2,8 @@
 API views.
 """
 
+# pylint: disable=no-member
+
 import os
 from datetime import datetime
 from functools import wraps

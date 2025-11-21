@@ -1,7 +1,9 @@
 """Model definitions for the smart city parking application."""
 
+# pylint: disable=no-member
+
 import uuid
-from django.db import models
+from django.contrib.gis.db import models
 from django.core.validators import RegexValidator
 
 FIREBASE_UID_VALIDATOR = RegexValidator(
@@ -42,9 +44,8 @@ class ParkingLot(models.Model):
         max_length=50, default=uuid.uuid4, unique=True, null=False, blank=False, editable=False
     )
     name = models.CharField(max_length=100, unique=True, null=False, blank=False)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
     address = models.CharField(max_length=255, unique=True, null=False, blank=False)
+    location = models.PointField(srid=4326, geography=True, null=False, blank=False)
 
     def __str__(self):
         return str(self.name)
