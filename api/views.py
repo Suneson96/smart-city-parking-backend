@@ -3,6 +3,7 @@ API views.
 """
 
 import os
+from datetime import datetime
 from functools import wraps
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -51,6 +52,35 @@ def firebase_authenticated(view_func):
         except firebase_auth.InvalidIdTokenError:
             return Response({"error": "Invalid ID token"}, status=401)
         except (firebase_auth.CertificateFetchError, ValueError, KeyError) as e:
+            return Response({"error": f"Authentication failed: {str(e)}"}, status=401)
+
+    return wrapper
+
+def parking_spot_authenticated(view_func):
+    """
+    Decorator to validate parking spot auth_code and attach parking spot to request.
+    Expects 'Authorization: Bearer <auth_code>' header.
+    """
+
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        auth_header = request.headers.get("Authorization")
+
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return Response(
+                {"error": "Authorization header with Bearer token required"}, status=401
+            )
+
+        auth_code = auth_header.split("Bearer ")[1]
+
+        try:
+            # Verify the auth_code
+            parking_spot = models.ParkingSpot.objects.get(auth_code=auth_code)
+            request.parking_spot = parking_spot
+            return view_func(request, *args, **kwargs)
+        except models.ParkingSpot.DoesNotExist:
+            return Response({f"error": "Invalid auth code"}, status=401)
+        except (ValueError, KeyError) as e:
             return Response({"error": f"Authentication failed: {str(e)}"}, status=401)
 
     return wrapper
@@ -204,7 +234,6 @@ def cadmin_get_parking_lots(request):
             parking_lots_data.append(
                 {
                     "id": lot.id,
-                    "auth_code": lot.auth_code,
                     "name": lot.name,
                     "latitude": lot.latitude,
                     "longitude": lot.longitude,
@@ -249,7 +278,6 @@ def cadmin_add_parking_lot(request):
 
         # Create new parking lot
         lot = models.ParkingLot.objects.create(
-            auth_code=data.get("auth_code"),
             name=data.get("name"),
             latitude=data.get("latitude"),
             longitude=data.get("longitude"),
@@ -332,7 +360,6 @@ def cadmin_update_parking_lot(request):
         lot = manage_relation.parking_lot
 
         # Update parking lot details
-        lot.auth_code = data.get("auth_code", lot.auth_code)
         lot.name = data.get("name", lot.name)
         lot.latitude = data.get("latitude", lot.latitude)
         lot.longitude = data.get("longitude", lot.longitude)
@@ -344,7 +371,6 @@ def cadmin_update_parking_lot(request):
                 "message": "Parking lot updated successfully",
                 "parking_lot": {
                     "id": lot.id,
-                    "auth_code": lot.auth_code,
                     "name": lot.name,
                     "latitude": lot.latitude,
                     "longitude": lot.longitude,
@@ -472,7 +498,6 @@ def parking_lots(_):
         parking_lots_data.append(
             {
                 "id": lot.id,
-                "auth_code": lot.auth_code,
                 "name": lot.name,
                 "latitude": lot.latitude,
                 "longitude": lot.longitude,
@@ -511,7 +536,6 @@ def cadmin_get_parking_spots(request):
             parking_spots_data.append(
                 {
                     "id": spot.id,
-                    "auth_code": spot.auth_code,
                     "parking_lot_id": lot.id,
                 }
             )
@@ -571,23 +595,13 @@ def cadmin_add_parking_spot(request):
             parking_lot=lot,
         )
 
-        # Get all parking spots in this parking lot
-        parking_spots = models.ParkingSpot.objects.filter(parking_lot=lot)
-        parking_spots_data = []
-        for spot in parking_spots:
-            parking_spots_data.append(
-                {
-                    "id": spot.id,
-                    "auth_code": spot.auth_code,
-                    "parking_lot_id": lot.id,
-                }
-            )
-
         return Response(
             {
                 "message": "Parking spot added successfully",
-                "parking_spots": parking_spots_data,
-                "count": len(parking_spots_data),
+                "parking_spot": {
+                    "id": spot.id,
+                    "parking_lot_id": lot.id,
+                },
             },
             status=201,
         )
@@ -679,51 +693,46 @@ def cadmin_parking_spots(request):
     
 
 @api_view(["POST"])
+@parking_spot_authenticated
 def post_parking_spot_event(request):
     """
     Post parking spot event to update occupied spots in Firestore.
     """
+    parking_spot = request.parking_spot
     data = request.data
-    auth_code = data.get("auth_code")
-    parking_spot_status = data.get("status")  # e.g., "occupied" or "vacant"
-    if not auth_code or not parking_spot_status:
-        return Response(
-            {"error": "auth_code and status are required"}, status=400
-        )
-    
-    try:
-        # Find the parking spot by auth_code
-        spot = models.ParkingSpot.objects.get(auth_code=auth_code)
-        lot = spot.parking_lot
-        lot_id_for_firestore = str(lot.id)
+    status = data.get("status")
 
-        # Update Firestore eventlist document
+    if status is None:
+        return Response({"error": "status field is required"}, status=400)
+
+    if status not in ["occupied", "vacant"]:
+        return Response({"error": "status must be 'occupied' or 'vacant'"}, status=400)
+    try:
         db = firestore.client()
-        eventlist_ref = db.collection('eventlists').document(lot_id_for_firestore)
+        parking_lot_id = str(parking_spot.parking_lot.id)
+        eventlist_ref = db.collection('eventlists').document(parking_lot_id)
         eventlist_doc = eventlist_ref.get()
         if not eventlist_doc.exists:
-            return Response(
-                {"error": "Event list document not found for this parking lot"}, status=404
-            )
-
+            return Response({"error": "Event list document does not exist"}, status=404)
+        
         eventlist_data = eventlist_doc.to_dict()
         events = eventlist_data.get('events', [])
+        if not events:
+            return Response({"error": "No events found in event list"}, status=500)
         
-        from datetime import datetime
+        latest_event = events[-1]
+        occupied_spots = set(latest_event.get('occupied_spots', []))
 
-        # Add new event with updated occupied spots
-        occupied_spots = set()
-        if events:
-            last_event = events[-1]
-            occupied_spots = set(last_event.get('occupied_spots', []))
-        if parking_spot_status == "occupied":
-            occupied_spots.add(spot.id)
-        elif parking_spot_status == "vacant":
-            occupied_spots.discard(spot.id)
-        else:
-            return Response(
-                {"error": "Invalid status value. Must be 'occupied' or 'vacant'."}, status=400
-            )
+        # Check if the status is already the same as the current state
+        if status == "occupied" and str(parking_spot.id) in occupied_spots:
+            return Response({"message": "Parking spot already marked as occupied"}, status=200)
+        if status == "vacant" and str(parking_spot.id) not in occupied_spots:
+            return Response({"message": "Parking spot already marked as vacant"}, status=200)
+
+        if status == "occupied":
+            occupied_spots.add(str(parking_spot.id))
+        elif status == "vacant":
+            occupied_spots.discard(str(parking_spot.id))
 
         new_event = {
             "occupied_spots": list(occupied_spots),
@@ -731,21 +740,11 @@ def post_parking_spot_event(request):
         }
         events.append(new_event)
 
-        # Update the document in Firestore
         eventlist_ref.update({
             'events': events,
             'updated_at': firestore.SERVER_TIMESTAMP
         })
 
-        return Response(
-            {"message": "Parking spot event posted successfully"}, status=200
-        )
-    
-    except models.ParkingSpot.DoesNotExist:
-        return Response(
-            {"error": "Parking spot not found for this auth_code"}, status=404
-        )
+        return Response({"message": "Parking spot event recorded successfully"}, status=200)
     except Exception as e:
-        return Response(
-            {"error": f"Failed to post parking spot event: {str(e)}"}, status=500
-        )
+        return Response({"error": f"Failed to record parking spot event: {str(e)}"}, status=500)
