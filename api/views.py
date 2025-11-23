@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view
 import requests
 from django.conf import settings
 from django.contrib.gis.geos import Point
+from django.db import IntegrityError
 import firebase_admin
 from firebase_admin import auth as firebase_auth, credentials
 from . import models
@@ -292,6 +293,10 @@ def cadmin_add_parking_lot(request):
         )
     except (ValueError, TypeError, KeyError) as e:
         return Response({"error": f"Failed to add parking lot: {str(e)}"}, status=500)
+    except IntegrityError as e:
+        return Response(
+            {"error": f"Database integrity error: {str(e)}"}, status=500
+        )
 
 
 def cadmin_update_parking_lot(request):
@@ -360,6 +365,10 @@ def cadmin_update_parking_lot(request):
             },
             status=403,
         )
+    except IntegrityError as e:
+        return Response(
+            {"error": f"Database integrity error: {str(e)}"}, status=500
+        )
     except (ValueError, TypeError, KeyError) as e:
         return Response(
             {"error": f"Failed to update parking lot: {str(e)}"}, status=500
@@ -413,6 +422,10 @@ def cadmin_delete_parking_lot(request):
                 "parking_lot_id": lot_id,
             },
             status=403,
+        )
+    except IntegrityError as e:
+        return Response(
+            {"error": f"Database integrity error: {str(e)}"}, status=500
         )
     except (ValueError, TypeError) as e:
         return Response(
