@@ -46,7 +46,6 @@ class ParkingLot(models.Model):
         unique=True,
         null=False,
         blank=False,
-        editable=False,
     )
     name = models.CharField(max_length=100, unique=True, null=False, blank=False)
     address = models.CharField(max_length=255, unique=True, null=False, blank=False)
@@ -88,7 +87,6 @@ class ParkingSpot(models.Model):
         unique=True,
         null=False,
         blank=False,
-        editable=False,
     )
     event_list = models.ForeignKey(
         EventList, on_delete=models.CASCADE, null=True, blank=True

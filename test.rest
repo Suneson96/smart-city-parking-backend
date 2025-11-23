@@ -109,5 +109,5 @@ Authorization: Bearer {{add_parking_spot.response.body.parking_spot.auth_code}}
 Content-Type: application/json
 
 {
-    "status": "occupied"
+    "occupied": true
 }

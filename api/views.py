@@ -625,7 +625,7 @@ def cadmin_add_parking_spot(request):
             {
                 "message": "Parking spot added successfully",
                 "parking_spot": {
-                    "id": spot.id,
+                    "auth_code": spot.auth_code,
                     "parking_lot_id": lot.id,
                 },
             },
@@ -648,6 +648,10 @@ def cadmin_add_parking_spot(request):
             },
             status=403,
         )
+    except IntegrityError as e:
+        return Response(
+            {"error": f"Database integrity error: {str(e)}"}, status=500
+        )
     except (ValueError, TypeError, KeyError) as e:
         return Response({"error": f"Failed to add parking spot: {str(e)}"}, status=500)
 
@@ -664,6 +668,7 @@ def cadmin_delete_parking_spot(request):
 
     firebase_uid = request.firebase_uid
     spot_id = request.data.get("id")
+    response = None
 
     try:
         # Get the city operator
@@ -671,16 +676,9 @@ def cadmin_delete_parking_spot(request):
 
         # Verify that the operator manages the parking spot
         spot = models.ParkingSpot.objects.get(id=spot_id)
-        manage_relation = models.Manage.objects.get(
+        _ = models.Manage.objects.get(
             operator=operator, parking_lot=spot.parking_lot
         )
-        if not manage_relation:
-            return Response(
-                {
-                    "error": "This parking spot is not managed by the authenticated city operator",
-                },
-                status=403,
-            )
 
         # Delete the parking spot from database
         spot.delete()
@@ -694,7 +692,7 @@ def cadmin_delete_parking_spot(request):
         )
 
     except models.CityOperator.DoesNotExist:
-        return Response(
+        response = Response(
             {
                 "error": "City operator not found for this Firebase UID",
                 "firebase_uid": firebase_uid,
@@ -702,18 +700,22 @@ def cadmin_delete_parking_spot(request):
             status=404,
         )
     except models.Manage.DoesNotExist:
-        return Response(
+        response = Response(
             {
                 "error": "This parking spot is not managed by the authenticated city operator",
                 "parking_spot_id": spot_id,
             },
             status=403,
         )
-    except (ValueError, TypeError) as e:
-        return Response(
+    except models.ParkingSpot.DoesNotExist:
+        response = Response(
+            {"error": "Parking spot not found"}, status=404
+        )
+    except (IntegrityError, ValueError, TypeError, AttributeError) as e:
+        response = Response(
             {"error": f"Failed to delete parking spot: {str(e)}"}, status=500
         )
-
+    return response
 
 @api_view(["GET", "POST", "DELETE"])
 @firebase_authenticated
@@ -738,19 +740,16 @@ def post_parking_spot_event(request):
     Expects: {"occupied": true} or {"occupied": false}
     """
     parking_spot = request.parking_spot
-    data = request.data
-    occupied = data.get("occupied")
+    occupied = request.data.get("occupied")
 
-    if occupied is None:
-        return Response({"error": "occupied field is required"}, status=400)
-
-    if not isinstance(occupied, bool):
-        return Response({"error": "occupied must be a boolean"}, status=400)
+    if occupied is None or not isinstance(occupied, bool):
+        return Response(
+            {"error": "Invalid 'occupied' value. Must be true or false."}, status=400
+        )
 
     try:
-        db = firestore.client()
         parking_lot_id = str(parking_spot.parking_lot.id)
-        eventlist_ref = db.collection("eventlists").document(parking_lot_id)
+        eventlist_ref = firestore.client().collection("eventlists").document(parking_lot_id)
         eventlist_doc = eventlist_ref.get()
         if not eventlist_doc.exists:
             return Response({"error": "Event list document does not exist"}, status=404)
