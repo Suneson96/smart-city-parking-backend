@@ -11,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import requests
 from django.conf import settings
+from django.contrib.gis.geos import Point
+from django.db import IntegrityError
 import firebase_admin
 from firebase_admin import auth as firebase_auth, credentials, firestore
 from . import models
@@ -238,8 +240,10 @@ def cadmin_get_parking_lots(request):
                 {
                     "id": lot.id,
                     "name": lot.name,
-                    "latitude": lot.latitude,
-                    "longitude": lot.longitude,
+                    "location": {
+                        "latitude": lot.location.y,
+                        "longitude": lot.location.x,
+                    },
                     "address": lot.address,
                 }
             )
@@ -282,8 +286,9 @@ def cadmin_add_parking_lot(request):
         # Create new parking lot
         lot = models.ParkingLot.objects.create(
             name=data.get("name"),
-            latitude=data.get("latitude"),
-            longitude=data.get("longitude"),
+            location=Point(
+                float(data.get("longitude")), float(data.get("latitude")), srid=4326
+            ),
             address=data.get("address"),
         )
 
@@ -314,8 +319,10 @@ def cadmin_add_parking_lot(request):
                     "id": lot.id,
                     "auth_code": lot.auth_code,
                     "name": lot.name,
-                    "latitude": lot.latitude,
-                    "longitude": lot.longitude,
+                    "location": {
+                        "latitude": lot.location.y,
+                        "longitude": lot.location.x,
+                    },
                     "address": lot.address,
                 },
             },
@@ -332,6 +339,10 @@ def cadmin_add_parking_lot(request):
         )
     except (ValueError, TypeError, KeyError) as e:
         return Response({"error": f"Failed to add parking lot: {str(e)}"}, status=500)
+    except IntegrityError as e:
+        return Response(
+            {"error": f"Database integrity error: {str(e)}"}, status=500
+        )
 
 
 def cadmin_update_parking_lot(request):
@@ -358,8 +369,11 @@ def cadmin_update_parking_lot(request):
 
         # Update parking lot details
         lot.name = data.get("name", lot.name)
-        lot.latitude = data.get("latitude", lot.latitude)
-        lot.longitude = data.get("longitude", lot.longitude)
+        lot.location = Point(
+            float(data.get("longitude", lot.location.x)),
+            float(data.get("latitude", lot.location.y)),
+            srid=4326,
+        )
         lot.address = data.get("address", lot.address)
         lot.save()
 
@@ -369,8 +383,10 @@ def cadmin_update_parking_lot(request):
                 "parking_lot": {
                     "id": lot.id,
                     "name": lot.name,
-                    "latitude": lot.latitude,
-                    "longitude": lot.longitude,
+                    "location": {
+                        "latitude": lot.location.y,
+                        "longitude": lot.location.x,
+                    },
                     "address": lot.address,
                 },
             },
@@ -392,6 +408,10 @@ def cadmin_update_parking_lot(request):
                 "parking_lot_id": lot_id,
             },
             status=403,
+        )
+    except IntegrityError as e:
+        return Response(
+            {"error": f"Database integrity error: {str(e)}"}, status=500
         )
     except (ValueError, TypeError, KeyError) as e:
         return Response(
@@ -460,6 +480,10 @@ def cadmin_delete_parking_lot(request):
             },
             status=403,
         )
+    except IntegrityError as e:
+        return Response(
+            {"error": f"Database integrity error: {str(e)}"}, status=500
+        )
     except (ValueError, TypeError) as e:
         return Response(
             {"error": f"Failed to delete parking lot: {str(e)}"}, status=500
@@ -498,8 +522,10 @@ def parking_lots(_):
             {
                 "id": lot.id,
                 "name": lot.name,
-                "latitude": lot.latitude,
-                "longitude": lot.longitude,
+                "location": {
+                    "latitude": lot.location.y,
+                    "longitude": lot.location.x,
+                },
                 "address": lot.address,
             }
         )
