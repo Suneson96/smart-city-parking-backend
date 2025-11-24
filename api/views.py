@@ -340,9 +340,7 @@ def cadmin_add_parking_lot(request):
     except (ValueError, TypeError, KeyError) as e:
         return Response({"error": f"Failed to add parking lot: {str(e)}"}, status=500)
     except IntegrityError as e:
-        return Response(
-            {"error": f"Database integrity error: {str(e)}"}, status=500
-        )
+        return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
 
 
 def cadmin_update_parking_lot(request):
@@ -410,9 +408,7 @@ def cadmin_update_parking_lot(request):
             status=403,
         )
     except IntegrityError as e:
-        return Response(
-            {"error": f"Database integrity error: {str(e)}"}, status=500
-        )
+        return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
     except (ValueError, TypeError, KeyError) as e:
         return Response(
             {"error": f"Failed to update parking lot: {str(e)}"}, status=500
@@ -481,9 +477,7 @@ def cadmin_delete_parking_lot(request):
             status=403,
         )
     except IntegrityError as e:
-        return Response(
-            {"error": f"Database integrity error: {str(e)}"}, status=500
-        )
+        return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
     except (ValueError, TypeError) as e:
         return Response(
             {"error": f"Failed to delete parking lot: {str(e)}"}, status=500
@@ -649,9 +643,7 @@ def cadmin_add_parking_spot(request):
             status=403,
         )
     except IntegrityError as e:
-        return Response(
-            {"error": f"Database integrity error: {str(e)}"}, status=500
-        )
+        return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
     except (ValueError, TypeError, KeyError) as e:
         return Response({"error": f"Failed to add parking spot: {str(e)}"}, status=500)
 
@@ -676,9 +668,7 @@ def cadmin_delete_parking_spot(request):
 
         # Verify that the operator manages the parking spot
         spot = models.ParkingSpot.objects.get(id=spot_id)
-        _ = models.Manage.objects.get(
-            operator=operator, parking_lot=spot.parking_lot
-        )
+        _ = models.Manage.objects.get(operator=operator, parking_lot=spot.parking_lot)
 
         # Delete the parking spot from database
         spot.delete()
@@ -708,14 +698,13 @@ def cadmin_delete_parking_spot(request):
             status=403,
         )
     except models.ParkingSpot.DoesNotExist:
-        response = Response(
-            {"error": "Parking spot not found"}, status=404
-        )
+        response = Response({"error": "Parking spot not found"}, status=404)
     except (IntegrityError, ValueError, TypeError, AttributeError) as e:
         response = Response(
             {"error": f"Failed to delete parking spot: {str(e)}"}, status=500
         )
     return response
+
 
 @api_view(["GET", "POST", "DELETE"])
 @firebase_authenticated
@@ -731,6 +720,7 @@ def cadmin_parking_spots(request):
     if request.method == "DELETE":
         return cadmin_delete_parking_spot(request)
     return Response({"error": "Method not allowed"}, status=405)
+
 
 @api_view(["POST"])
 @parking_spot_authenticated
@@ -749,7 +739,9 @@ def post_parking_spot_event(request):
 
     try:
         parking_lot_id = str(parking_spot.parking_lot.id)
-        eventlist_ref = firestore.client().collection("eventlists").document(parking_lot_id)
+        eventlist_ref = (
+            firestore.client().collection("eventlists").document(parking_lot_id)
+        )
         eventlist_doc = eventlist_ref.get()
         if not eventlist_doc.exists:
             return Response({"error": "Event list document does not exist"}, status=404)
