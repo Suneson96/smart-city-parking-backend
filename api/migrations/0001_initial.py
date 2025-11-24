@@ -11,24 +11,49 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='CityOperator',
+            name="CityOperator",
             fields=[
-                ('id', models.CharField(max_length=28, primary_key=True, serialize=False, validators=[django.core.validators.RegexValidator(message='Invalid Firebase UID format.', regex='^[A-Za-z0-9_\\-]{28}$')])),
+                (
+                    "id",
+                    models.CharField(
+                        max_length=28,
+                        primary_key=True,
+                        serialize=False,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="Invalid Firebase UID format.",
+                                regex="^[A-Za-z0-9_\\-]{28}$",
+                            )
+                        ],
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Driver',
+            name="Driver",
             fields=[
-                ('id', models.CharField(max_length=28, primary_key=True, serialize=False, validators=[django.core.validators.RegexValidator(message='Invalid Firebase UID format.', regex='^[A-Za-z0-9_\\-]{28}$')])),
+                (
+                    "id",
+                    models.CharField(
+                        max_length=28,
+                        primary_key=True,
+                        serialize=False,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="Invalid Firebase UID format.",
+                                regex="^[A-Za-z0-9_\\-]{28}$",
+                            )
+                        ],
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='ParkingLot',
+            name="ParkingLot",
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('auth_code', models.CharField(default=uuid.uuid4, max_length=50, unique=True)),
@@ -38,27 +63,73 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Manage',
+            name="EventList",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('operator', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.cityoperator')),
-                ('parking_lot', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.parkinglot')),
+                (
+                    "id",
+                    models.CharField(
+                        max_length=128,
+                        primary_key=True,
+                        serialize=False,
+                        validators=[
+                            django.core.validators.RegexValidator(
+                                message="Invalid Firestore document ID.",
+                                regex="^[A-Za-z0-9_\\-]+$",
+                            )
+                        ],
+                    ),
+                ),
+                (
+                    "parking_lot",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="api.parkinglot"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='EventList',
+            name="ParkingSpot",
             fields=[
-                ('id', models.CharField(max_length=128, primary_key=True, serialize=False, validators=[django.core.validators.RegexValidator(message='Invalid Firestore document ID.', regex='^[A-Za-z0-9_\\-]+$')])),
-                ('parking_lot', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.parkinglot')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "auth_code",
+                    models.CharField(auto_created=True, max_length=50, unique=True),
+                ),
+                (
+                    "event_list",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.eventlist",
+                    ),
+                ),
+                (
+                    "parking_lot",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="api.parkinglot"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='ParkingSpot',
+            name="Manage",
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('auth_code', models.CharField(default=uuid.uuid4, max_length=50, unique=True)),
                 ('event_list', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='api.eventlist')),
                 ('parking_lot', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.parkinglot')),
             ],
+            options={
+                "unique_together": {("operator", "parking_lot")},
+            },
         ),
     ]

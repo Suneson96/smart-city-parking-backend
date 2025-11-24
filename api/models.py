@@ -1,6 +1,6 @@
 """Model definitions for the smart city parking application."""
 
-# pylint: disable=no-member
+# pylint: disable=no-member, too-few-public-methods
 
 import uuid
 from django.contrib.gis.db import models
@@ -60,6 +60,11 @@ class Manage(models.Model):
 
     operator = models.ForeignKey(CityOperator, on_delete=models.CASCADE)
     parking_lot = models.ForeignKey(ParkingLot, on_delete=models.CASCADE)
+
+    class Meta:
+        """Meta options to enforce unique management relationships."""
+
+        unique_together = ("operator", "parking_lot")
 
     def __str__(self):
         return f"{self.operator.id} manages {self.parking_lot.name}"
