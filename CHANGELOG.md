@@ -2,6 +2,21 @@
 
 ### New features
 
+#### SCP-30 Add API endpoints
+  * Added parking-lots endpoints
+    * `GET: http://localhost:8000/parking-lots/`
+    * `GET: http://localhost:8000/cadmin/parking-lots/`
+    * `POST: http://localhost:8000/cadmin/parking-lots/`
+    * `PUT: http://localhost:8000/cadmin/parking-lots/`
+    * `DELETE: http://localhost:8000/cadmin/parking-lots/`
+
+#### SCP-31 Integrate GeoBjangi fir geospatial support
+  * Change parking lot location to a geospatial point
+
+#### SCP-28 Add Django models
+  * Added Django models for the database
+  * Added serializers and admin registration for the models
+
 #### SCP-18 Add sign in with google to backend
   * Added logic to login with google OAuth token.
 

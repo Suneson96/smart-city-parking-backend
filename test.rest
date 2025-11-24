@@ -8,6 +8,7 @@ Content-Type: application/json
 }
 
 ### Login - obtain token
+# @name login
 POST http://127.0.0.1:8000/login/
 Content-Type: application/json
 
@@ -32,3 +33,44 @@ Content-Type: application/json
     "token": "PASTE_YOUR_ID_TOKEN_HERE"
 }
 
+### Get all parking lots
+GET http://127.0.0.1:8000/parking-lots/
+Content-Type: application/json
+
+### Get all parking lots of managed by city operator
+GET http://127.0.0.1:8000/cadmin/parking-lots/
+Authorization: Bearer {{login.response.body.idToken}}
+Content-Type: application/json
+
+### Add a new parking lot
+POST http://127.0.0.1:8000/cadmin/parking-lots/
+Authorization: Bearer {{login.response.body.idToken}}
+Content-Type: application/json
+
+{
+    "auth_code": "test1234",
+    "name": "Central Park Lot",
+    "latitude": 40.785091,
+    "longitude": -73.968285,
+    "address": "123 Main St, Anytown, USA"
+}
+
+### Update an existing parking lot
+PUT http://127.0.0.1:8000/cadmin/parking-lots/
+Authorization: Bearer {{login.response.body.idToken}}
+Content-Type: application/json
+
+{
+    "id": 1,
+    "name": "Updated Central Park Lot",
+    "address": "456 Elm St, Anytown, USA"
+}
+
+### Delete an existing parking lot
+DELETE http://127.0.0.1:8000/cadmin/parking-lots/
+Authorization: Bearer {{login.response.body.idToken}}
+Content-Type: application/json
+
+{
+    "id": 1
+}
