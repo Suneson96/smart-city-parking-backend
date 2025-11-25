@@ -90,7 +90,7 @@ Authorization: Bearer {{login.response.body.idToken}}
 Content-Type: application/json
 
 {
-    "parking_lot_id": 6
+    "parking_lot_id": 1
 }
 
 ### Delete a parking spot from a parking lot managed by city operator
