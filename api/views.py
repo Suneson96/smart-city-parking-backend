@@ -748,6 +748,10 @@ def post_parking_spot_event(request):
 
         eventlist_data = eventlist_doc.to_dict()
         events = eventlist_data.get("events", [])
+        if not events:
+            return Response(
+                {"error": "No events object found in event list document"}, status=500
+            )
         latest_event = events[-1]
         occupied_spots = set(latest_event.get("occupied_spots", []))
         spot_id = str(parking_spot.id)
