@@ -312,7 +312,7 @@ def cadmin_add_parking_lot(request):
             eventlist_template = {
                 "parking_lot_id": lot.id,
                 "parking_lot_name": lot.name,
-                "events": [{"occupied_spots": [], "timestamp": datetime.utcnow()}],
+                "events": [{"occupied_spots": [], "timestamp": firestore.SERVER_TIMESTAMP}],
                 "created_at": firestore.SERVER_TIMESTAMP,
                 "updated_at": firestore.SERVER_TIMESTAMP,
             }
@@ -776,7 +776,7 @@ def post_parking_spot_event(request):
 
         new_event = {
             "occupied_spots": list(occupied_spots),
-            "timestamp": datetime.utcnow(),
+            "timestamp": firestore.SERVER_TIMESTAMP,
         }
         events.append(new_event)
 
