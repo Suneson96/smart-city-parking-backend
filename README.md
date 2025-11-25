@@ -99,6 +99,20 @@ All `cadmin/parking-lots/` endpoints require Firebase authentication via the `Au
 - `PUT /cadmin/parking-lots/` — Update an existing parking lot. Body: { "id": "...", "auth_code": "...", "name": "...", "latitude": ..., "longitude": ..., "address": "..." }.
 - `DELETE /cadmin/parking-lots/` — Delete a parking lot. Body: { "id": "..." }.
 
+### City Admin Parking Spots (Authenticated)
+
+All `cadmin/parking-spots/` endpoints require Firebase authentication via the `Authorization: Bearer <idToken>` header.
+
+- `GET /cadmin/parking-spots/` — Get all parking spots for a specific parking lot managed by the authenticated city operator. Body: { "parking_lot_id": ... }.
+- `POST /cadmin/parking-spots/` — Add a new parking spot to a parking lot. Body: { "parking_lot_id": ... }. Returns the auth_code for the parking spot.
+- `DELETE /cadmin/parking-spots/` — Delete a parking spot. Body: { "id": ... }.
+
+### Parking Events (Parking Spot Authenticated)
+
+The parking events endpoint requires parking spot authentication via the `Authorization: Bearer <auth_code>` header, where `auth_code` is the unique authentication code assigned to each parking spot.
+
+- `POST /parking-events/` — Record a parking spot occupancy event. Body: { "occupied": true } or { "occupied": false }. Updates the event list in Firestore with the current occupancy status.
+
 ### Manual testing of endpoints
 Install the [Rest Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension and use the test.rest file to test the endpoints.
 
