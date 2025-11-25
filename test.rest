@@ -48,7 +48,6 @@ Authorization: Bearer {{login.response.body.idToken}}
 Content-Type: application/json
 
 {
-    "auth_code": "test1234",
     "name": "Central Park Lot",
     "latitude": 40.785091,
     "longitude": -73.968285,
@@ -73,4 +72,41 @@ Content-Type: application/json
 
 {
     "id": 1
+}
+
+### Get all parking spots in a parking lot managed by city operator
+GET http://127.0.0.1:8000/cadmin/parking-spots/
+Authorization: Bearer {{login.response.body.idToken}}
+Content-Type: application/json
+
+{
+    "parking_lot_id": 1
+}
+
+### Add a new parking spot to a parking lot managed by city operator
+# @name add_parking_spot
+POST http://127.0.0.1:8000/cadmin/parking-spots/
+Authorization: Bearer {{login.response.body.idToken}}
+Content-Type: application/json
+
+{
+    "parking_lot_id": 1
+}
+
+### Delete a parking spot from a parking lot managed by city operator
+DELETE http://127.0.0.1:8000/cadmin/parking-spots/
+Authorization: Bearer {{login.response.body.idToken}}
+Content-Type: application/json
+
+{
+    "id": 1
+}
+
+### Add parking events to a parking spot
+POST http://127.0.0.1:8000/parking-events/
+Authorization: Bearer {{add_parking_spot.response.body.parking_spot.auth_code}}
+Content-Type: application/json
+
+{
+    "occupied": true
 }

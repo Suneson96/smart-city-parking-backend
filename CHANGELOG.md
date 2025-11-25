@@ -2,6 +2,15 @@
 
 ### New features
 
+#### SCP-32 Add venet list for parking lot
+  * Added event list creation on firstore when parking lot is added
+  * Added parking spot endpoints
+    * `GET: http://localhost:8000/cadmin/parking-spots/` Get all parking spots for parking lot
+    * `POST: http://localhost:8000/cadmin/parking-spots/` Add parking spot to parking lot
+    * `DELETE: http://localhost:8000/cadmin/parking-spots/` Remove parking spot
+  * Added parking spot event endpoint
+    * `POST: http://localhost:8000/parking-events/`
+
 #### SCP-30 Add API endpoints
   * Added parking-lots endpoints
     * `GET: http://localhost:8000/parking-lots/`
