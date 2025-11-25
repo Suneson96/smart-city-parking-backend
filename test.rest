@@ -48,7 +48,6 @@ Authorization: Bearer {{login.response.body.idToken}}
 Content-Type: application/json
 
 {
-    "auth_code": "test1234",
     "name": "Central Park Lot",
     "latitude": 40.785091,
     "longitude": -73.968285,
@@ -91,7 +90,7 @@ Authorization: Bearer {{login.response.body.idToken}}
 Content-Type: application/json
 
 {
-    "parking_lot_id": 1
+    "parking_lot_id": 6
 }
 
 ### Delete a parking spot from a parking lot managed by city operator
