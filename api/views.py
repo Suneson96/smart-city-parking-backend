@@ -3,6 +3,7 @@ API views.
 """
 
 # pylint: disable=no-member
+# pylint: disable=broad-except
 
 import os
 from datetime import datetime
@@ -85,7 +86,7 @@ def parking_spot_authenticated(view_func):
             return view_func(request, *args, **kwargs)
         except models.ParkingSpot.DoesNotExist:
             return Response({"error": "Invalid auth code"}, status=401)
-        except (ValueError, KeyError) as e:
+        except Exception as e:
             return Response({"error": f"Authentication failed: {str(e)}"}, status=401)
 
     return wrapper
@@ -265,7 +266,15 @@ def cadmin_get_parking_lots(request):
             },
             status=404,
         )
-    except (models.ParkingLot.DoesNotExist, models.Manage.DoesNotExist) as e:
+    except models.ParkingLot.DoesNotExist as e:
+        return Response(
+            {"error": f"Parking lot does not exist {str(e)}"}, status=500
+        )
+    except models.Manage.DoesNotExist as e:
+        return Response(
+            {"error": f"Manage relation does not exist {str(e)}"}, status=500
+        )
+    except Exception as e:
         return Response(
             {"error": f"Failed to retrieve parking lots: {str(e)}"}, status=500
         )
@@ -337,10 +346,8 @@ def cadmin_add_parking_lot(request):
             },
             status=404,
         )
-    except (ValueError, TypeError, KeyError) as e:
+    except Exception as e:
         return Response({"error": f"Failed to add parking lot: {str(e)}"}, status=500)
-    except IntegrityError as e:
-        return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
 
 
 def cadmin_update_parking_lot(request):
@@ -407,9 +414,7 @@ def cadmin_update_parking_lot(request):
             },
             status=403,
         )
-    except IntegrityError as e:
-        return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
-    except (ValueError, TypeError, KeyError) as e:
+    except Exception as e:
         return Response(
             {"error": f"Failed to update parking lot: {str(e)}"}, status=500
         )
@@ -478,7 +483,8 @@ def cadmin_delete_parking_lot(request):
         )
     except IntegrityError as e:
         return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
-    except (ValueError, TypeError) as e:
+
+    except Exception as e:
         return Response(
             {"error": f"Failed to delete parking lot: {str(e)}"}, status=500
         )
@@ -584,7 +590,8 @@ def cadmin_get_parking_spots(request):
             },
             status=403,
         )
-    except (ValueError, TypeError, KeyError) as e:
+
+    except Exception as e:
         return Response(
             {"error": f"Failed to retrieve parking spots: {str(e)}"}, status=500
         )
@@ -642,9 +649,8 @@ def cadmin_add_parking_spot(request):
             },
             status=403,
         )
-    except IntegrityError as e:
-        return Response({"error": f"Database integrity error: {str(e)}"}, status=500)
-    except (ValueError, TypeError, KeyError) as e:
+
+    except Exception as e:
         return Response({"error": f"Failed to add parking spot: {str(e)}"}, status=500)
 
 
@@ -699,7 +705,8 @@ def cadmin_delete_parking_spot(request):
         )
     except models.ParkingSpot.DoesNotExist:
         response = Response({"error": "Parking spot not found"}, status=404)
-    except (IntegrityError, ValueError, TypeError, AttributeError) as e:
+
+    except Exception as e:
         response = Response(
             {"error": f"Failed to delete parking spot: {str(e)}"}, status=500
         )
@@ -748,10 +755,6 @@ def post_parking_spot_event(request):
 
         eventlist_data = eventlist_doc.to_dict()
         events = eventlist_data.get("events", [])
-        if not events:
-            return Response(
-                {"error": "No events object found in event list document"}, status=500
-            )
         latest_event = events[-1]
         occupied_spots = set(latest_event.get("occupied_spots", []))
         spot_id = str(parking_spot.id)
@@ -784,7 +787,8 @@ def post_parking_spot_event(request):
         return Response(
             {"message": "Parking spot event recorded successfully"}, status=200
         )
-    except (ValueError, ConnectionError, RuntimeError) as e:
+
+    except Exception as e:
         return Response(
             {"error": f"Failed to record parking spot event: {str(e)}"}, status=500
         )
