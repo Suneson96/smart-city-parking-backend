@@ -7,10 +7,10 @@ API views.
 
 import os
 from functools import wraps
+from datetime import datetime, timezone
+import requests
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-import requests
-from datetime import datetime, timezone
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.db import IntegrityError
