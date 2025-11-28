@@ -7,9 +7,10 @@ API views.
 
 import os
 from functools import wraps
+from datetime import datetime, timezone
+import requests
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-import requests
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.db import IntegrityError
@@ -311,7 +312,7 @@ def cadmin_add_parking_lot(request):
             eventlist_template = {
                 "parking_lot_id": lot.id,
                 "parking_lot_name": lot.name,
-                "events": [{"occupied_spots": [], "timestamp": firestore.SERVER_TIMESTAMP}],
+                "events": [{"occupied_spots": [], "timestamp": datetime.now(timezone.utc)}],
                 "created_at": firestore.SERVER_TIMESTAMP,
                 "updated_at": firestore.SERVER_TIMESTAMP,
             }
@@ -775,7 +776,7 @@ def post_parking_spot_event(request):
 
         new_event = {
             "occupied_spots": list(occupied_spots),
-            "timestamp": firestore.SERVER_TIMESTAMP,
+            "timestamp": datetime.now(timezone.utc),
         }
         events.append(new_event)
 
