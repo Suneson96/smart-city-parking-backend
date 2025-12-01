@@ -85,6 +85,7 @@ class EventListAdmin(admin.ModelAdmin):
 class ParkingSpotAdmin(admin.ModelAdmin):
     """Admin interface for ParkingSpot model."""
 
-    list_display = ("auth_code", "parking_lot", "event_list")
-    search_fields = ("auth_code", "parking_lot__name")
+    list_display = ("id", "auth_code_prefix", "parking_lot", "event_list")
+    search_fields = ("auth_code_prefix", "parking_lot__name")
     list_filter = ("parking_lot", "event_list")
+    readonly_fields = ("auth_code_hash", "auth_code_prefix")

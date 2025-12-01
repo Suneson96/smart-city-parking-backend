@@ -80,8 +80,9 @@ def parking_spot_authenticated(view_func):
         auth_code = auth_header.split("Bearer ")[1]
 
         try:
-            # Verify the auth_code
-            parking_spot = models.ParkingSpot.objects.get(auth_code=auth_code)
+            # Hash the provided token and verify it
+            auth_code_hash = models.hash_token(auth_code)
+            parking_spot = models.ParkingSpot.objects.get(auth_code_hash=auth_code_hash)
             request.parking_spot = parking_spot
             return view_func(request, *args, **kwargs)
         except models.ParkingSpot.DoesNotExist:
@@ -582,6 +583,7 @@ def cadmin_get_parking_spots(request):
                     "spot_number": spot.id,  # Using id as spot_number for now
                     "parking_lot_id": lot.id,
                     "is_occupied": is_occupied(spot.id),
+                    "auth_code_prefix": spot.auth_code_prefix,
                 }
             )
 
@@ -629,18 +631,28 @@ def cadmin_add_parking_spot(request):
 
         lot = manage_relation.parking_lot
 
+        # Generate secure token
+        auth_token = models.generate_parking_spot_token()
+        auth_code_hash = models.hash_token(auth_token)
+        auth_code_prefix = models.get_token_prefix(auth_token)
+
         # Create new parking spot
         spot = models.ParkingSpot.objects.create(
             parking_lot=lot,
+            auth_code_hash=auth_code_hash,
+            auth_code_prefix=auth_code_prefix,
         )
 
         return Response(
             {
                 "message": "Parking spot added successfully",
                 "parking_spot": {
-                    "auth_code": spot.auth_code,
+                    "id": spot.id,
+                    "auth_code": auth_token,  # Full token returned only once on creation
+                    "auth_code_prefix": auth_code_prefix,
                     "parking_lot_id": lot.id,
                 },
+                "warning": "Save this auth_code securely. It will not be shown again.",
             },
             status=201,
         )
