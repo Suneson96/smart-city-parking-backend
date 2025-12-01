@@ -541,7 +541,12 @@ def cadmin_get_parking_spots(request):
     Requires Firebase authentication via Authorization header.
     """
     firebase_uid = request.firebase_uid
-    parking_lot_id = request.data.get("parking_lot_id")
+    parking_lot_id = request.GET.get("parking_lot_id")
+
+    if not parking_lot_id:
+        return Response(
+            {"error": "parking_lot_id query parameter is required"}, status=400
+        )
 
     try:
         # Get the city operator
@@ -556,24 +561,31 @@ def cadmin_get_parking_spots(request):
 
         # Get all parking spots in this parking lot
         parking_spots = models.ParkingSpot.objects.filter(parking_lot=lot)
+        lot_eventlist = firestore.client().collection("eventlists").document(
+            str(lot.id)
+        ).get()
+
+        if lot_eventlist.exists:
+            lot_eventlist_data = lot_eventlist.to_dict()
+            latest_event = lot_eventlist_data.get("events", [])[-1]
+            occupied_spots = set(latest_event.get("occupied_spots", []))
+        else:
+            occupied_spots = set()
+
+        is_occupied = lambda spot_id: str(spot_id) in occupied_spots
 
         parking_spots_data = []
         for spot in parking_spots:
             parking_spots_data.append(
                 {
                     "id": spot.id,
+                    "spot_number": spot.id,  # Using id as spot_number for now
                     "parking_lot_id": lot.id,
+                    "is_occupied": is_occupied(spot.id),
                 }
             )
 
-        return Response(
-            {
-                "parking_lot_id": lot.id,
-                "parking_spots": parking_spots_data,
-                "count": len(parking_spots_data),
-            },
-            status=200,
-        )
+        return Response(parking_spots_data, status=200)
     except models.CityOperator.DoesNotExist:
         return Response(
             {
