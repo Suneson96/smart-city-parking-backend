@@ -5,7 +5,7 @@
 from django import forms
 from django.contrib.gis import admin
 from django.contrib.gis.geos import Point
-from .models import Driver, CityOperator, ParkingLot, Manage, EventList, ParkingSpot
+from .models import Driver, CityOperator, OperatorRequest, ParkingLot, Manage, EventList, ParkingSpot
 
 
 @admin.register(Driver)
@@ -22,6 +22,17 @@ class CityOperatorAdmin(admin.ModelAdmin):
 
     list_display = ("id",)
     search_fields = ("id",)
+
+
+@admin.register(OperatorRequest)
+class OperatorRequestAdmin(admin.ModelAdmin):
+    """Admin interface for OperatorRequest model."""
+
+    list_display = ("user_id", "status", "requested_at", "updated_at")
+    search_fields = ("user_id",)
+    list_filter = ("status", "requested_at")
+    readonly_fields = ("user_id", "requested_at", "updated_at")
+    fields = ("user_id", "status", "notes", "requested_at", "updated_at")
 
 
 class ParkingLotAdminForm(forms.ModelForm):

@@ -56,6 +56,40 @@ class CityOperator(models.Model):
         return str(self.id)
 
 
+class OperatorRequest(models.Model):
+    """Model representing a request to become a city operator."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    user_id = models.CharField(
+        max_length=28,
+        unique=True,
+        validators=[FIREBASE_UID_VALIDATOR],
+        help_text="Firebase UID of the user requesting operator access"
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='pending',
+        null=False,
+        blank=False,
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True, null=True, help_text="Admin notes about the request")
+
+    def __str__(self):
+        return f"Operator Request - {self.user_id} ({self.status})"
+
+    class Meta:
+        """Meta options for operator requests."""
+        ordering = ['-requested_at']
+
+
 class ParkingLot(models.Model):
     """Model representing a parking lot."""
 
@@ -69,6 +103,7 @@ class ParkingLot(models.Model):
     name = models.CharField(max_length=100, unique=True, null=False, blank=False)
     address = models.CharField(max_length=255, unique=True, null=False, blank=False)
     location = models.PointField(srid=4326, geography=True, null=False, blank=False)
+    capacity = models.IntegerField(default=0, null=False, blank=False)
 
     def __str__(self):
         return str(self.name)

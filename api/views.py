@@ -218,6 +218,121 @@ def refresh_token(request):
     return Response(response_data, status=status_code)
 
 
+@api_view(["GET"])
+@firebase_authenticated
+def check_user_role(request):
+    """
+    Check if the authenticated user is a city operator or has a pending request.
+    Returns the user's role and status.
+    """
+    firebase_uid = request.firebase_uid
+
+    try:
+        # Check if user is a city operator
+        operator = models.CityOperator.objects.get(id=firebase_uid)
+        return Response(
+            {
+                "is_city_operator": True,
+                "user_id": firebase_uid,
+                "role": "city_operator",
+                "operator_request_status": None
+            },
+            status=200,
+        )
+    except models.CityOperator.DoesNotExist:
+        # Check if user has an operator request
+        try:
+            operator_request = models.OperatorRequest.objects.get(user_id=firebase_uid)
+            return Response(
+                {
+                    "is_city_operator": False,
+                    "user_id": firebase_uid,
+                    "role": "driver",
+                    "operator_request_status": operator_request.status
+                },
+                status=200,
+            )
+        except models.OperatorRequest.DoesNotExist:
+            # User exists but is not a city operator and has no request
+            return Response(
+                {
+                    "is_city_operator": False,
+                    "user_id": firebase_uid,
+                    "role": "driver",
+                    "operator_request_status": None
+                },
+                status=200,
+            )
+
+
+@api_view(["POST"])
+@firebase_authenticated
+def request_operator_access(request):
+    """
+    Create a request for the authenticated user to become a city operator.
+    """
+    firebase_uid = request.firebase_uid
+
+    try:
+        # Check if user is already a city operator
+        models.CityOperator.objects.get(id=firebase_uid)
+        return Response(
+            {"error": "User is already a city operator"},
+            status=400,
+        )
+    except models.CityOperator.DoesNotExist:
+        pass
+
+    try:
+        # Check if user already has a pending or approved request
+        existing_request = models.OperatorRequest.objects.get(user_id=firebase_uid)
+        
+        if existing_request.status == 'pending':
+            return Response(
+                {
+                    "message": "You already have a pending operator request",
+                    "status": existing_request.status,
+                    "requested_at": existing_request.requested_at
+                },
+                status=200,
+            )
+        elif existing_request.status == 'approved':
+            return Response(
+                {
+                    "message": "Your operator request has been approved",
+                    "status": existing_request.status
+                },
+                status=200,
+            )
+        elif existing_request.status == 'rejected':
+            # Allow resubmission if previously rejected
+            existing_request.status = 'pending'
+            existing_request.notes = None
+            existing_request.save()
+            return Response(
+                {
+                    "message": "Operator access request resubmitted successfully",
+                    "status": "pending",
+                    "requested_at": existing_request.requested_at
+                },
+                status=201,
+            )
+    except models.OperatorRequest.DoesNotExist:
+        # Create new operator request
+        operator_request = models.OperatorRequest.objects.create(
+            user_id=firebase_uid,
+            status='pending'
+        )
+        return Response(
+            {
+                "message": "Operator access request submitted successfully",
+                "status": operator_request.status,
+                "requested_at": operator_request.requested_at
+            },
+            status=201,
+        )
+
+
 def cadmin_get_parking_lots(request):
     """
     Get all parking lots managed by the authenticated city operator.
@@ -247,6 +362,7 @@ def cadmin_get_parking_lots(request):
                         "longitude": lot.location.x,
                     },
                     "address": lot.address,
+                    "capacity": lot.capacity,
                 }
             )
 
@@ -528,6 +644,7 @@ def parking_lots(_):
                     "longitude": lot.location.x,
                 },
                 "address": lot.address,
+                "capacity": lot.capacity,
             }
         )
 
@@ -643,6 +760,10 @@ def cadmin_add_parking_spot(request):
             auth_code_prefix=auth_code_prefix,
         )
 
+        # Increment parking lot capacity
+        lot.capacity += 1
+        lot.save()
+
         return Response(
             {
                 "message": "Parking spot added successfully",
@@ -700,8 +821,16 @@ def cadmin_delete_parking_spot(request):
         spot = models.ParkingSpot.objects.get(id=spot_id)
         _ = models.Manage.objects.get(operator=operator, parking_lot=spot.parking_lot)
 
+        # Get the parking lot to decrement capacity
+        lot = spot.parking_lot
+
         # Delete the parking spot from database
         spot.delete()
+
+        # Decrement parking lot capacity
+        if lot.capacity > 0:
+            lot.capacity -= 1
+            lot.save()
 
         return Response(
             {
