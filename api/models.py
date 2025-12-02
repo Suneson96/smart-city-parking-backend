@@ -104,6 +104,13 @@ class ParkingLot(models.Model):
     address = models.CharField(max_length=255, unique=True, null=False, blank=False)
     location = models.PointField(srid=4326, geography=True, null=False, blank=False)
     capacity = models.IntegerField(default=0, null=False, blank=False)
+    price_per_hour = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Price in DKK per hour"
+    )
 
     def __str__(self):
         return str(self.name)

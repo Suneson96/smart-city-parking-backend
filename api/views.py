@@ -363,6 +363,7 @@ def cadmin_get_parking_lots(request):
                     },
                     "address": lot.address,
                     "capacity": lot.capacity,
+                    "price_per_hour": float(lot.price_per_hour) if lot.price_per_hour else None,
                 }
             )
 
@@ -627,26 +628,92 @@ def cadmin_parking_lots(request):
 
 
 @api_view(["GET"])
-def parking_lots(_):
+def parking_lots(request):
     """
-    Get all parking lots.
+    Get all parking lots with optional filtering by distance and price.
+    
+    Query parameters:
+    - latitude: User's latitude (required for distance filtering)
+    - longitude: User's longitude (required for distance filtering)
+    - max_distance: Maximum distance in kilometers (optional)
+    - max_price: Maximum price per hour in DKK (optional)
     """
+    from django.contrib.gis.geos import Point
+    from django.contrib.gis.db.models.functions import Distance
+    from django.db.models import Q
+    
+    # Get query parameters
+    user_lat = request.GET.get("latitude")
+    user_lon = request.GET.get("longitude")
+    max_distance = request.GET.get("max_distance")
+    max_price = request.GET.get("max_price")
+    
+    # Start with base queryset
+    parking_lots_query = models.ParkingLot.objects.all()
+    
+    # Filter by price if specified (include NULL/0 prices)
+    if max_price:
+        try:
+            max_price_decimal = float(max_price)
+            parking_lots_query = parking_lots_query.filter(
+                Q(price_per_hour__lte=max_price_decimal) | 
+                Q(price_per_hour__isnull=True) |
+                Q(price_per_hour=0)
+            )
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid max_price parameter"}, status=400
+            )
+    
+    # Calculate distances and filter if user location provided
+    user_location = None
+    if user_lat and user_lon:
+        try:
+            user_location = Point(float(user_lon), float(user_lat), srid=4326)
+            
+            # Filter by distance if specified
+            if max_distance:
+                try:
+                    max_distance_meters = float(max_distance) * 1000  # Convert km to meters
+                    parking_lots_query = parking_lots_query.filter(
+                        location__distance_lte=(user_location, max_distance_meters)
+                    )
+                except (ValueError, TypeError):
+                    return Response(
+                        {"error": "Invalid max_distance parameter"}, status=400
+                    )
+            
+            # Annotate with distance for ordering and display
+            parking_lots_query = parking_lots_query.annotate(
+                distance=Distance('location', user_location)
+            ).order_by('distance')
+            
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid latitude or longitude parameters"}, status=400
+            )
 
-    all_parking_lots = models.ParkingLot.objects.all()
+    # Execute query and build response
     parking_lots_data = []
-    for lot in all_parking_lots:
-        parking_lots_data.append(
-            {
-                "id": lot.id,
-                "name": lot.name,
-                "location": {
-                    "latitude": lot.location.y,
-                    "longitude": lot.location.x,
-                },
-                "address": lot.address,
-                "capacity": lot.capacity,
-            }
-        )
+    for lot in parking_lots_query:
+        lot_data = {
+            "id": lot.id,
+            "name": lot.name,
+            "location": {
+                "latitude": lot.location.y,
+                "longitude": lot.location.x,
+            },
+            "address": lot.address,
+            "capacity": lot.capacity,
+            "price_per_hour": float(lot.price_per_hour) if lot.price_per_hour else None,
+        }
+        
+        # Add distance if calculated
+        if user_location and hasattr(lot, 'distance'):
+            # Convert meters to kilometers
+            lot_data["distance"] = round(lot.distance.km, 2)
+        
+        parking_lots_data.append(lot_data)
 
     return Response(
         {"parking_lots": parking_lots_data, "count": len(parking_lots_data)}, status=200

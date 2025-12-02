@@ -45,7 +45,7 @@ class ParkingLotAdminForm(forms.ModelForm):
         """Meta class for ParkingLotAdminForm."""
 
         model = ParkingLot
-        fields = ("auth_code", "name", "address", "latitude", "longitude")
+        fields = ("auth_code", "name", "address", "latitude", "longitude", "price_per_hour")
         exclude = ("location",)
 
     def __init__(self, *args, **kwargs):
