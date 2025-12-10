@@ -417,6 +417,7 @@ def cadmin_add_parking_lot(request):
                 float(data.get("longitude")), float(data.get("latitude")), srid=4326
             ),
             address=data.get("address"),
+            price_per_hour=data.get("price_per_hour", None),
         )
 
         # Create management relation
@@ -498,6 +499,11 @@ def cadmin_update_parking_lot(request):
             srid=4326,
         )
         lot.address = data.get("address", lot.address)
+        
+        # Update price_per_hour if provided
+        if "price_per_hour" in data:
+            lot.price_per_hour = data.get("price_per_hour")
+        
         lot.save()
 
         return Response(
@@ -511,6 +517,7 @@ def cadmin_update_parking_lot(request):
                         "longitude": lot.location.x,
                     },
                     "address": lot.address,
+                    "price_per_hour": float(lot.price_per_hour) if lot.price_per_hour else None,
                 },
             },
             status=200,
