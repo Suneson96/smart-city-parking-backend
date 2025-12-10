@@ -16,4 +16,5 @@ urlpatterns = [
     path("cadmin/parking-lots/", views.cadmin_parking_lots),
     path("cadmin/parking-spots/", views.cadmin_parking_spots),
     path("parking-events/", views.post_parking_spot_event),
+    path("request-forecast/", views.request_forecast),
 ]

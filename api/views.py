@@ -7,7 +7,7 @@ API views.
 
 import os
 from functools import wraps
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import requests
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -1018,4 +1018,142 @@ def post_parking_spot_event(request):
     except Exception as e:
         return Response(
             {"error": f"Failed to record parking spot event: {str(e)}"}, status=500
+        )
+
+@api_view(["GET"])
+def request_forecast(request):
+    """
+    Request parking occupancy forecast from external service.
+    
+    Query parameters:
+    - parking_lot_id: ID of the parking lot (required)
+    - hours_ahead: Hours ahead to predict (1, 2, or 3, default: 1)
+    """
+    # Validate query parameters
+    parking_lot_id = request.GET.get("parking_lot_id")
+    if not parking_lot_id:
+        return Response(
+            {"error": "parking_lot_id query parameter is required"}, status=400
+        )
+    
+    try:
+        prediction_hours_ahead = int(request.GET.get("hours_ahead", 1))
+    except (ValueError, TypeError):
+        return Response(
+            {"error": "hours_ahead must be a valid integer"}, status=400
+        )
+    
+    if prediction_hours_ahead not in [1, 2, 3]:
+        return Response(
+            {"error": "hours_ahead query parameter must be 1, 2, or 3"}, status=400
+        )
+
+    # Retrieve parking lot and event data
+    try:
+        parking_lot = models.ParkingLot.objects.get(id=parking_lot_id)
+        
+        # Get Firestore event data
+        firestore_client = firestore.client()
+        eventlist_ref = firestore_client.collection("eventlists").document(
+            str(parking_lot.id)
+        )
+        eventlist_doc = eventlist_ref.get()
+        
+        if not eventlist_doc.exists:
+            return Response(
+                {"error": "Event list document does not exist"}, status=404
+            )
+        
+        eventlist_data = eventlist_doc.to_dict()
+        events = eventlist_data.get("events", [])
+        
+        if not events:
+            return Response(
+                {"error": "No events found for this parking lot"}, status=404
+            )
+
+    except models.ParkingLot.DoesNotExist:
+        return Response({"error": "Parking lot not found"}, status=404)
+    except Exception as e:
+        return Response(
+            {"error": f"Failed to retrieve parking lot data: {str(e)}"}, status=500
+        )
+
+    # Process event data for forecast
+    try:
+        now = datetime.now(timezone.utc)
+        
+        # Get occupancy status 24 hours ago
+        target_time = now - timedelta(hours=24)
+        event_24h_ago = min(
+            events,
+            key=lambda event: abs(
+                event["timestamp"].replace(tzinfo=timezone.utc) - target_time
+            ),
+        )
+        occupancy_status_24h_ago = len(event_24h_ago.get("occupied_spots", []))
+        
+        # Get events from the last 3 hours
+        three_hours_ago = now - timedelta(hours=3)
+        recent_events = [
+            {
+                "occupied_spots": event.get("occupied_spots", []),
+                "timestamp": event["timestamp"].replace(tzinfo=timezone.utc).isoformat(),
+            }
+            for event in events
+            if event["timestamp"].replace(tzinfo=timezone.utc) >= three_hours_ago
+        ]
+        
+        # If no recent events, use the most recent event available
+        if not recent_events:
+            latest_event = max(
+                events, key=lambda e: e["timestamp"].replace(tzinfo=timezone.utc)
+            )
+            recent_events = [
+                {
+                    "occupied_spots": latest_event.get("occupied_spots", []),
+                    "timestamp": latest_event["timestamp"]
+                    .replace(tzinfo=timezone.utc)
+                    .isoformat(),
+                }
+            ]
+        
+        prediction_timestamp = now + timedelta(hours=prediction_hours_ahead)
+
+    except Exception as e:
+        return Response(
+            {"error": f"Failed to process event data: {str(e)}"}, status=500
+        )
+
+    # Request forecast from external service
+    try:
+        forecast_service_url = settings.FORECAST_SERVICE_URL
+        if not forecast_service_url:
+            return Response(
+                {"error": "Forecast service URL not configured on server"}, status=500
+            )
+        
+        url = f"{forecast_service_url}/forecast"
+        payload = {
+            "latitude": parking_lot.location.y,
+            "longitude": parking_lot.location.x,
+            "prediction_timestamp": prediction_timestamp.isoformat(),
+            "capacity": parking_lot.capacity,
+            "status_24h_ago": occupancy_status_24h_ago,
+            "status_3h_until_now": recent_events,
+        }
+        
+        response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+        forecast_data = response.json()
+        
+        return Response({"forecast": forecast_data}, status=200)
+    
+    except requests.RequestException as e:
+        return Response(
+            {"error": f"Failed to retrieve forecast data: {str(e)}"}, status=500
+        )
+    except Exception as e:
+        return Response(
+            {"error": f"Unexpected error: {str(e)}"}, status=500
         )

@@ -21,6 +21,7 @@ env = environ.Env(
     FIREBASE_API_KEY=(str, None),
     GOOGLE_APPLICATION_CREDENTIALS=(str, None),
     HOST_URL=(str, "http://localhost"),
+    FORECAST_SERVICE_URL=(str, None),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:8000", "http://127.0.0.1:8000"]),
     POSTGRES_DB=(str, None),
@@ -42,6 +43,9 @@ GOOGLE_APPLICATION_CREDENTIALS = env("GOOGLE_APPLICATION_CREDENTIALS")
 
 # Host settings
 HOST_URL = env("HOST_URL")
+
+# Forecast service settings
+FORECAST_SERVICE_URL = env("FORECAST_SERVICE_URL")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
