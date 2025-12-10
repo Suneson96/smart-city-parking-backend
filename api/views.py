@@ -17,6 +17,9 @@ from django.db import IntegrityError
 import firebase_admin
 from firebase_admin import auth as firebase_auth, credentials, firestore
 from . import models
+from django.contrib.gis.geos import Point
+from django.contrib.gis.db.models.functions import Distance
+from django.db.models import Q
 
 # Initialize Firebase Admin SDK
 try:
@@ -645,9 +648,6 @@ def parking_lots(request):
     - max_distance: Maximum distance in kilometers (optional)
     - max_price: Maximum price per hour in DKK (optional)
     """
-    from django.contrib.gis.geos import Point
-    from django.contrib.gis.db.models.functions import Distance
-    from django.db.models import Q
     
     # Get query parameters
     user_lat = request.GET.get("latitude")
