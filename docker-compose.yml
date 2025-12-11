@@ -28,6 +28,18 @@ services:
       db:
         condition: service_healthy
         restart: true
+
+  predict:
+    build:
+      context: .
+      dockerfile: prediction_service/Dockerfile
+    container_name: smart-city-parking-predict
+    env_file:
+      - .env
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
       
 volumes:
   postgres_data:

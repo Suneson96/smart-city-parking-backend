@@ -16,10 +16,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 #Prevents Python from buffering stdout and stderr
 ENV PYTHONUNBUFFERED=1 
 
-# Install essential system packages (compiler, curl) and clean up cache
+# Install essential system packages (curl, GIS libs, OpenMP runtime) and clean up cache
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     binutils libproj-dev gdal-bin \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy uv and uvx from the uv image

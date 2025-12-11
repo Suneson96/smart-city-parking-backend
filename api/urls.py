@@ -4,7 +4,6 @@ API endpoint configurations.
 
 from django.urls import path
 from . import views
-from Prediction.django_api import predict_view
 
 urlpatterns = [
     path("", views.get_example),
@@ -18,5 +17,5 @@ urlpatterns = [
     path("cadmin/parking-spots/", views.cadmin_parking_spots),
     path("parking-events/", views.post_parking_spot_event),
     path("request-forecast/", views.request_forecast),
-    path("predict/", predict_view),
+    path("predict/", views.predict_proxy),
 ]

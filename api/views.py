@@ -114,6 +114,52 @@ def _make_firebase_request(url, payload, timeout=10):
         return {"error": str(exc)}, 500
 
 
+@api_view(["POST"])
+def predict_proxy(request):
+    """
+    Proxy /predict/ to the separate prediction Django service.
+
+    Request JSON contract (forwarded as-is to the prediction service):
+      - required: timestamp_utc (ISO8601 str),
+                  lat (float), lon (float), total_spaces (int)
+      - optional: external_id (str), events, occupied_spots_24h_ago,
+                  and precomputed WEATHER_VARS/LAG_VARS
+
+    Response JSON contract (relayed from the prediction service):
+      - external_id (str)
+      - timestamp_utc (str)
+      - p_busy (float)
+      - predicted_occupied (int or null)
+      - predicted_free (int or null)
+    """
+    predict_url = getattr(
+        settings,
+        "PREDICT_SERVICE_URL",
+        "http://predict:8000/predict/",
+    )
+
+    try:
+        resp = requests.post(predict_url, json=request.data, timeout=20)
+    except requests.RequestException as exc:
+        return Response(
+            {"error": f"Prediction service unavailable: {str(exc)}"},
+            status=503,
+        )
+
+    try:
+        data = resp.json()
+    except ValueError:
+        return Response(
+            {
+                "error": f"Prediction service returned invalid JSON "
+                f"(status {resp.status_code})"
+            },
+            status=502,
+        )
+
+    return Response(data, status=resp.status_code)
+
+
 @api_view(["GET"])
 def get_example(_):
     """

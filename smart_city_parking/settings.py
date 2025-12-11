@@ -29,6 +29,7 @@ env = environ.Env(
     POSTGRES_PASSWORD=(str, "parking_password"),
     DB_HOST=(str, "db"),
     DB_PORT=(int, 5432),
+    PREDICT_SERVICE_URL=(str, "http://predict:8000/predict/"),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -43,6 +44,7 @@ GOOGLE_APPLICATION_CREDENTIALS = env("GOOGLE_APPLICATION_CREDENTIALS")
 
 # Host settings
 HOST_URL = env("HOST_URL")
+PREDICT_SERVICE_URL = env("PREDICT_SERVICE_URL")
 
 # Forecast service settings
 FORECAST_SERVICE_URL = env("FORECAST_SERVICE_URL")
