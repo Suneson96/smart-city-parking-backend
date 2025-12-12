@@ -70,7 +70,12 @@ def prepare_single_input(df_row: pd.DataFrame, spec: dict) -> tuple[pd.DataFrame
             df[lag] = np.nan
 
     cat_dtype = CategoricalDtype(categories=train_cats, ordered=True)
-    df["external_id"] = df["external_id"].astype(str).astype(cat_dtype)
+    if "external_id" in df.columns:
+        df["external_id"] = df["external_id"].astype(str).astype(cat_dtype)
+    else:
+        # If no external_id is provided, use a column of NaNs with the correct
+        # categorical dtype so the model input schema still matches training.
+        df["external_id"] = pd.Series([None] * len(df), dtype=cat_dtype)
 
     for f in features:
         if f not in df.columns:
@@ -120,4 +125,3 @@ except Exception as exc:  # pragma: no cover - defensive fallback
     # If it cannot be loaded, we log and fall back to an empty DataFrame.
     print(f"Warning: failed to load training data from {DATA_PARQUET}: {exc}")
     df = pd.DataFrame()
-

@@ -131,6 +131,9 @@ def predict_proxy(request):
       - p_busy (float)
       - predicted_occupied (int or null)
       - predicted_free (int or null)
+
+    On errors, the proxy forwards the prediction service's HTTP status code and
+    either its JSON body (if available) or a raw text message.
     """
     predict_url = getattr(
         settings,
@@ -146,15 +149,16 @@ def predict_proxy(request):
             status=503,
         )
 
+    content_type = resp.headers.get("Content-Type", "")
     try:
-        data = resp.json()
+        if "application/json" in content_type.lower():
+            data = resp.json()
+        else:
+            data = {"error": resp.text}
     except ValueError:
         return Response(
-            {
-                "error": f"Prediction service returned invalid JSON "
-                f"(status {resp.status_code})"
-            },
-            status=502,
+            {"error": resp.text or f"Prediction service error (status {resp.status_code})"},
+            status=resp.status_code,
         )
 
     return Response(data, status=resp.status_code)

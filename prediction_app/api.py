@@ -259,12 +259,50 @@ def predict_view(request: HttpRequest) -> JsonResponse | HttpResponseBadRequest:
     predicted_occupied = row.get("predicted_occupied")
     predicted_free = row.get("predicted_free")
 
+    # Derive a simple, explainable confidence score and label.
+    confidence_score = 1.0
+    confidence_reasons: list[str] = []
+
+    # Penalize missing external_id (no historical lag lookup).
+    if external_id is None:
+        confidence_score -= 0.3
+        confidence_reasons.append("external_id_missing")
+
+    # Penalize missing lag features after all enrichments.
+    if any(req_dict.get(var) is None for var in LAG_VARS):
+        confidence_score -= 0.2
+        confidence_reasons.append("lags_not_available")
+
+    # Penalize missing weather fields after attempted fetch.
+    if any(req_dict.get(var) is None for var in WEATHER_VARS):
+        confidence_score -= 0.1
+        confidence_reasons.append("weather_imputed_or_missing")
+
+    # Penalize probabilities close to the decision boundary.
+    p_busy = float(row["p_busy"])
+    if 0.4 <= p_busy <= 0.6:
+        confidence_score -= 0.2
+        confidence_reasons.append("p_busy_near_decision_boundary")
+
+    # Clamp score to [0, 1].
+    confidence_score = max(0.0, min(1.0, confidence_score))
+
+    if confidence_score >= 0.75:
+        confidence_level = "high"
+    elif confidence_score >= 0.5:
+        confidence_level = "medium"
+    else:
+        confidence_level = "low"
+
     response_payload = {
         "external_id": str(row["external_id"]) if "external_id" in row else req_dict.get("external_id"),
         "timestamp_utc": str(row["timestamp_utc"]),
-        "p_busy": float(row["p_busy"]),
+        "p_busy": p_busy,
         "predicted_occupied": int(predicted_occupied) if pd.notna(predicted_occupied) else None,
         "predicted_free": int(predicted_free) if pd.notna(predicted_free) else None,
+        "confidence_score": confidence_score,
+        "confidence_level": confidence_level,
+        "confidence_reasons": confidence_reasons,
     }
 
     return JsonResponse(response_payload)
