@@ -268,8 +268,6 @@ def check_user_role(request):
             )
 
 
-@api_view(["POST"])
-@firebase_authenticated
 def request_operator_access(request):
     """
     Create a request for the authenticated user to become a city operator.
@@ -287,7 +285,7 @@ def request_operator_access(request):
         pass
 
     try:
-        # Check if user already has a pending or approved request
+        # Check if user already has a request
         existing_request = models.OperatorRequest.objects.get(user_id=firebase_uid)
         
         if existing_request.status == 'pending':
@@ -335,6 +333,57 @@ def request_operator_access(request):
             status=201,
         )
 
+
+def cancel_operator_request(request):
+    """
+    Cancel an existing operator access request for the authenticated user.
+    """
+    firebase_uid = request.firebase_uid
+
+    try:
+        operator_request = models.OperatorRequest.objects.get(user_id=firebase_uid)
+        print(f"DEBUG cancel_operator_request: found OperatorRequest id={operator_request.id} status={operator_request.status}")
+
+        # Delete the operator request record so the user can resubmit cleanly
+        operator_request.delete()
+        print("DEBUG cancel_operator_request: OperatorRequest deleted")
+
+        return Response(
+            {
+                "message": "Operator request cancelled and removed successfully",
+                "user_id": firebase_uid,
+                "status": None,
+            },
+            status=200,
+        )
+    except models.OperatorRequest.DoesNotExist:
+        print("DEBUG cancel_operator_request: no OperatorRequest found")
+        # No request exists - this is okay, just return appropriate message
+        return Response(
+            {
+                "message": "No operator request found to cancel",
+                "user_id": firebase_uid,
+                "status": None,
+            },
+            status=200,
+        )
+    except Exception as e:
+        print(f"DEBUG cancel_operator_request exception: {e}")
+        return Response(
+            {"error": f"Failed to cancel operator request: {str(e)}"}, status=500
+        )
+
+@api_view(["POST", "DELETE"])
+@firebase_authenticated
+def operator_request_access(request):
+    """
+    Create or delete a request for the authenticated user to become a city operator.
+    """
+    if request.method == "POST":
+        return request_operator_access(request)
+    if request.method == "DELETE":
+        return cancel_operator_request(request)
+    return Response({"error": "Method not allowed"}, status=405)
 
 def cadmin_get_parking_lots(request):
     """
