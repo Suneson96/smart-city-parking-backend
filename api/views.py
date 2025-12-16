@@ -1183,14 +1183,15 @@ def request_forecast(request):
                 {"error": "Forecast service URL not configured on server"}, status=500
             )
         
-        url = f"{forecast_service_url}/forecast"
+        url = f"{forecast_service_url}/predict/"
         payload = {
-            "latitude": parking_lot.location.y,
-            "longitude": parking_lot.location.x,
-            "prediction_timestamp": prediction_timestamp.isoformat(),
-            "capacity": parking_lot.capacity,
-            "status_24h_ago": occupancy_status_24h_ago,
-            "status_3h_until_now": recent_events,
+            "timestamp_utc": prediction_timestamp.isoformat(),
+            "lat": parking_lot.location.y,
+            "lon": parking_lot.location.x,
+            "total_spaces": parking_lot.capacity,
+            "external_id": str(parking_lot.id),
+            "occupied_spots_24h_ago": occupancy_status_24h_ago,
+            "events": recent_events,
         }
         
         response = requests.post(url, json=payload, timeout=10)
